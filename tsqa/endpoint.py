@@ -1,5 +1,7 @@
 # TODO: some request/response class to load the various libary's implementations and allow for comparison
 
+import os
+
 import gevent
 import gevent.greenlet
 import gevent.wsgi
@@ -28,6 +30,7 @@ class endpoint(object):
     def __call__(self, *args):
         raise Exception(args)
         self.func(*args)
+
 
 class TrackingRequests():
     def __init__(self, endpoint):
@@ -59,6 +62,7 @@ class TrackingRequests():
 
         return handlerFunction
 
+# TODO: better webserver? Flask is okay, but gevent is... not great
 # TODO: force http access log somewhere else
 class DynamicHTTPEndpoint(threading.Thread):
     TRACKING_HEADER = '__cool_test_header__'
@@ -153,7 +157,8 @@ class DynamicHTTPEndpoint(threading.Thread):
 
     def run(self):
         self.server = gevent.wsgi.WSGIServer(('', 0),
-                                              self.app.wsgi)
+                                              self.app.wsgi,
+                                              log=open(os.devnull, 'w'))
         self.server.start()
         # mark it as ready
         self.ready.set()

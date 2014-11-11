@@ -19,7 +19,7 @@ class TestEnvironmentCase(tsqa.test_cases.EnvironmentCase):
     def test_base(self):
         assert isinstance(self.environment, tsqa.environment.Environment)
 
-class TestDynamicHTTPENdpointCase(tsqa.test_cases.DynamicHTTPEndpointCase):
+class TestDynamicHTTPEndpointCase(tsqa.test_cases.DynamicHTTPEndpointCase):
     def test_base(self):
         ret = requests.get(self.endpoint_url('/footest'))
         assert ret.status_code == 200

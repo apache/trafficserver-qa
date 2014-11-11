@@ -2,7 +2,7 @@
 Test the utils
 '''
 
-import helpers
+from .. import helpers
 import tsqa.utils
 
 def test_merge_dicts():

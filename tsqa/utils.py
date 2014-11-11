@@ -1,3 +1,7 @@
+from collections import MutableMapping
+import os
+import json
+
 def merge_dicts(*args):
     '''
     Merge dicts in order
@@ -11,6 +15,7 @@ def merge_dicts(*args):
                 ret[k] = v
     return ret
 
+
 # TODO: move to utils library
 def configure_list(configure):
     ret = []
@@ -20,6 +25,7 @@ def configure_list(configure):
         else:  # otherwise there was a value
             ret.append('--{0}={1}'.format(k, v))
     return ret
+
 
 def configure_string_to_dict(configure_string):
     '''
@@ -36,3 +42,80 @@ def configure_string_to_dict(configure_string):
         ret[k] = v
     return ret
 
+
+class BuildCache(MutableMapping):
+    '''
+    Cache layouts on disk
+
+    This is just a mapping of source_hash -> key -> installed_dir
+    '''
+    cache_map_filename = 'env_cache_map.json'
+
+    def __init__(self, cache_dir):
+        super(BuildCache, self).__init__()
+        self.cache_dir = cache_dir
+
+        if not os.path.isdir(self.cache_dir):
+            os.makedirs(self.cache_dir)
+
+        self._dict = {}
+
+        self.load_cache()
+
+    @property
+    def cache_map_file(self):
+        return os.path.join(self.cache_dir, self.cache_map_filename)
+
+    def load_cache(self):
+        '''
+        Load the cache from disk
+        '''
+        try:
+            with open(self.cache_map_file) as fh:
+                cache = json.load(fh)
+        except IOError:
+            return
+
+        changed = False  # whether we changed the cache file, and need to write it out
+        # verify that all of those directories exist, clean them out if they don't
+        for source_hash, env_map in cache.items():
+            # if the directory doesn't exist
+            for key, path in env_map.items():
+                if not os.path.isdir(path):
+                    del cache[source_hash][key]
+                    changed = True
+            # if the source_hash level key is now empty
+            if len(cache[source_hash]) == 0:
+                del cache[source_hash]
+                changed = True
+
+        self._dict = cache
+        if changed:  # if we changed it, lets write it out to disk
+            self.save_cache()
+
+    def save_cache(self):
+        '''
+        Write the cache out to disk
+        '''
+        with open(self.cache_map_file, 'w') as fh:
+            fh.write(json.dumps(self._dict))
+
+    def __setitem__(self, key, val):
+        self._dict[key] = val
+        self.save_cache()
+
+    def __delitem__(self, key):
+        del self._dict[key]
+        self.save_cache()
+
+    def __getitem__(self, key):
+        return self._dict[key]
+
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __len__(self):
+        return len(self._dict)
+
+    def __del__(self):
+        self.save_cache()

@@ -16,16 +16,11 @@ import json
 from collections import MutableMapping
 
 # local imports
-from tsqa.env import Layout, Environment
-from tsqa.utils import merge_dicts, configure_list
+from env import Layout, Environment
+from utils import merge_dicts, configure_list
 
 SOURCE_DIR = '/home/thjackso/src/trafficserver'
 TMP_DIR = '/home/thjackso/src/tsqa/tmp'
-
-# TODO: cache "installed" environments in our special cache dir
-# TODO: use "environment" class
-
-
 
 
 class BuildCache(MutableMapping):
@@ -44,6 +39,7 @@ class BuildCache(MutableMapping):
             os.makedirs(self.cache_dir)
 
         self._dict = {}
+
         self.load_cache()
 
     @property
@@ -137,9 +133,7 @@ class EnvironmentFactory(object):
             self.default_env = copy.copy(os.environ)
 
     def autoreconf(self):
-        '''
-        Autoreconf the source directory
-        '''
+        # TODO: re-enable, disabled just to speed it up
         # run autoreconf in source tree
         p = subprocess.Popen(['autoreconf'],
                              cwd=self.source_dir,
@@ -179,7 +173,7 @@ class EnvironmentFactory(object):
     @property
     def environment_stash(self):
         '''
-        Return your source_dir's version of the cache
+        Return your source_dir's section of the cache
         '''
         if self.source_hash not in self.class_environment_stash:
             self.class_environment_stash[self.source_hash] = {}
@@ -201,7 +195,7 @@ class EnvironmentFactory(object):
 
     def get_environment(self, configure=None, env=None):
         '''
-        Build (ore return cached) environment with configure/env
+        Build (or return cached) environment with configure/env
         '''
         # set defaults, if none where passed in
         if configure is None:

@@ -4,18 +4,14 @@ import os
 import copy
 import shutil
 import json
-from utils import merge_dicts, configure_list
+from utils import merge_dicts, configure_list, BuildCache
 
 
 class EnvironmentFactory(object):
     '''
-    Create environments with given configure/env s
-    Source_dir is a git repo, and we will return environments cached by
-    git hash, configure, and env
-
-    Class that will make builds of <SOURCE CODE> with optional env/configure flags
-    This will maintain a set of unique "environments" (built code) and will return
-    copies of these environments to callers
+    Mke builds of <SOURCE CODE> with optional env/configure flags
+    This uses a BuildCache to maintain a set of unique "layouts" (built code on disk)
+    and will return copies of these in environments to callers
     '''
     class_environment_stash = None
     def __init__(self,
@@ -119,6 +115,10 @@ class EnvironmentFactory(object):
             env = merge_dicts(self.default_env, env)
 
         key = self._get_key(configure, env)
+
+        # TODO: remove, this is a hack for local dev
+        if key not in self.environment_stash:
+            key = self.environment_stash.iterkeys().next()
 
         # if we don't have it built already, lets build it
         if key not in self.environment_stash:

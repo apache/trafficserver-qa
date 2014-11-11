@@ -2,15 +2,16 @@
 Test the buildcache
 '''
 
-from .. import helpers
 import tsqa.utils
+unittest = tsqa.utils.import_unittest()
+
 import tempfile
 import shutil
 import os
 import json
 
 
-class TestBuildCache(helpers.TestCase):
+class TestBuildCache(unittest.TestCase):
     def setUp(self):
         self.tmp_dir = tempfile.mkdtemp()
 

@@ -1,6 +1,17 @@
 from collections import MutableMapping
 import os
 import json
+import sys
+
+def import_unittest():
+    '''
+    Import unittest
+    '''
+    if sys.version_info < (2, 7):
+        return __import__('unittest2')
+    else:
+        return __import__('unittest')
+
 
 def merge_dicts(*args):
     '''

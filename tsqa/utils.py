@@ -2,7 +2,10 @@ from collections import MutableMapping
 import os
 import json
 import sys
+import subprocess
 
+
+# TODO: test
 def import_unittest():
     '''
     Import unittest
@@ -11,6 +14,18 @@ def import_unittest():
         return __import__('unittest2')
     else:
         return __import__('unittest')
+
+
+# TODO: test
+def run_sync_command(*args, **kwargs):
+    '''
+    Helper to run a command synchronously
+    '''
+    p = subprocess.Popen(*args, **kwargs)
+    stdout, stderr = p.communicate()
+    if p.returncode != 0:
+        raise Exception('Error running: {0}\n{1}'.format(args[0], stderr))
+    return stdout, stderr
 
 
 def merge_dicts(*args):

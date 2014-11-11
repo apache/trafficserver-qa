@@ -5,7 +5,6 @@ import os
 import gevent
 import gevent.greenlet
 import gevent.wsgi
-import grequests
 from bottle import Bottle, request, hook, response  # TODO: switch to flask?? Better docs?
 import threading
 from collections import defaultdict
@@ -62,10 +61,11 @@ class TrackingRequests():
 
         return handlerFunction
 
+
 # TODO: better webserver? Flask is okay, but gevent is... not great
 # TODO: force http access log somewhere else
 class DynamicHTTPEndpoint(threading.Thread):
-    TRACKING_HEADER = '__cool_test_header__'
+    TRACKING_HEADER = '__cool_test_header__'  # TODO: better header name?
 
     @property
     def address(self):

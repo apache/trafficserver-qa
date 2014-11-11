@@ -4,7 +4,7 @@ import os
 import copy
 import shutil
 import json
-from utils import merge_dicts, configure_list, BuildCache
+from utils import merge_dicts, configure_list, BuildCache, run_sync_command
 
 
 class EnvironmentFactory(object):
@@ -59,23 +59,13 @@ class EnvironmentFactory(object):
         Return the git hash of the source directory
         '''
         if not hasattr(self , '_source_hash'):
-            tmp, _ = self._run_sync_command(['git', 'rev-parse', 'HEAD'],
-                                            cwd=self.source_dir,
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE,
-                                            )
+            tmp, _ = run_sync_command(['git', 'rev-parse', 'HEAD'],
+                                      cwd=self.source_dir,
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE,
+                                      )
             self._source_hash = tmp.strip()
         return self._source_hash
-
-    def _run_sync_command(self, *args, **kwargs):
-        '''
-        Helper to run a command synchronously
-        '''
-        p = subprocess.Popen(*args, **kwargs)
-        stdout, stderr = p.communicate()
-        if p.returncode != 0:
-            raise Exception('Error running: {0}\n{1}'.format(args[0], stderr))
-        return stdout, stderr
 
     @property
     def environment_stash(self):
@@ -127,29 +117,29 @@ class EnvironmentFactory(object):
 
             # configure
             args = [os.path.join(self.source_dir, 'configure'), '--prefix=/'] + configure_list(configure)
-            self._run_sync_command(args,
-                                   cwd=builddir,
-                                   env=env,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   )
+            run_sync_command(args,
+                             cwd=builddir,
+                             env=env,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             )
 
             # make
-            self._run_sync_command(['make', '-j'],
-                                   cwd=builddir,
-                                   env=env,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   )
+            run_sync_command(['make', '-j'],
+                             cwd=builddir,
+                             env=env,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             )
             installdir = tempfile.mkdtemp(dir=self.env_cache_dir)
 
             # make install
-            self._run_sync_command(['make', 'install', 'DESTDIR={0}'.format(installdir)],
-                                   cwd=builddir,
-                                   env=env,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   )
+            run_sync_command(['make', 'install', 'DESTDIR={0}'.format(installdir)],
+                             cwd=builddir,
+                             env=env,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             )
 
             shutil.rmtree(builddir)  # delete builddir, not useful after install
             # stash the env
@@ -253,7 +243,6 @@ class Environment:
         with open(os.path.join(self.layout.logdir, 'cop.log'), 'w+') as logfile:
             self.cop = subprocess.Popen(cmd,
                                         env=environ,
-                                        stdin=open('/dev/null'),
                                         stdout=logfile,
                                         stderr=logfile)
 
@@ -326,8 +315,12 @@ class Environment:
         assert(os.path.isfile(os.path.join(self.layout.sysconfdir, 'records.config')))
         self.__exec_cop()
 
+    # TODO: more graceful stop?
     def stop(self):
-        pass
+        self.cop.kill()
+
+    def running(self):
+        return self.cop is not None and self.cop.returncode is not None  # its running if it hasn't died
 
     def __del__(self):
         self.destroy()

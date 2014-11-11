@@ -14,10 +14,19 @@ import tsqa.test_cases
 import tsqa.environment
 
 import requests
+import time
 
 class TestEnvironmentCase(tsqa.test_cases.EnvironmentCase):
     def test_base(self):
         assert isinstance(self.environment, tsqa.environment.Environment)
+
+    # TODO: actually test this, this is currently terrible ;)
+    def test_daemon(self):
+        self.environment.start()  # start ATS
+        time.sleep(2)
+        assert self.environment.cop.pid > 0
+        assert self.environment.cop.returncode is None
+        self.environment.stop()
 
 class TestDynamicHTTPEndpointCase(tsqa.test_cases.DynamicHTTPEndpointCase):
     def test_base(self):

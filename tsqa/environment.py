@@ -43,15 +43,12 @@ class EnvironmentFactory(object):
         Autoreconf to make the configure script
         '''
         # run autoreconf in source tree
-        p = subprocess.Popen(['autoreconf'],
-                             cwd=self.source_dir,
-                             env=self.default_env,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             )
-        stdout, stderr = p.communicate()
-        if p.returncode != 0:
-            raise Exception('Unable to autoreconf {0}'.format(self.source_dir))
+        run_sync_command(['autoreconf'],
+                         cwd=self.source_dir,
+                         env=self.default_env,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         )
 
     @property
     def source_hash(self):
@@ -154,6 +151,7 @@ class EnvironmentFactory(object):
         return ret
 
 
+# TODO: make this more configurable??
 class Layout:
     # For now, just use a static set of directories relative to TS_ROOT. I
     # don't think that this will actually work in the general case, since there

@@ -2,33 +2,15 @@
 
 import os
 
-import gevent
-import gevent.greenlet
-import gevent.wsgi
-from bottle import Bottle, request, hook, response  # TODO: switch to flask?? Better docs?
 import threading
 from collections import defaultdict
 import requests
 
+import flask
+from wsgiref.simple_server import make_server
+
 # dict of testid -> {client_request, client_response}
 REQUESTS = defaultdict(dict)
-
-
-# TODO: something which can do the endpoint registration with a decorator
-class endpoint(object):
-    def __get__(self, obj, objtype):
-        """Support instance methods."""
-        import functools
-        return functools.partial(self.__call__, obj)
-
-    def __init__(self, f):
-        self.func = f
-        import functools
-        raise Exception(dir(functools.partial(self.__call__, f)))
-
-    def __call__(self, *args):
-        raise Exception(args)
-        self.func(*args)
 
 
 class TrackingRequests():
@@ -62,14 +44,12 @@ class TrackingRequests():
         return handlerFunction
 
 
-# TODO: better webserver? Flask is okay, but gevent is... not great
-# TODO: force http access log somewhere else
 class DynamicHTTPEndpoint(threading.Thread):
-    TRACKING_HEADER = '__cool_test_header__'  # TODO: better header name?
+    TRACKING_HEADER = '__cool_test_header__'
 
     @property
     def address(self):
-        return self.server.address
+        return (self.server.server_address, self.server.server_port)
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -83,32 +63,35 @@ class DynamicHTTPEndpoint(threading.Thread):
         # dict of pathname (no starting /) -> function
         self.handlers = {}
 
-        self.app = Bottle()
+        self.app = flask.Flask(__name__)
+        self.app.debug = True
 
 
-        @self.app.hook('before_request')
+        @self.app.before_request
         def save_request():
             '''
             If the tracking header is set, save the request
             '''
-            if request.headers.get(self.TRACKING_HEADER):
-                self.tracked_requests[request.headers[self.TRACKING_HEADER]] = {'request': request.copy()}
+            if flask.request.headers.get(self.TRACKING_HEADER):
+                self.tracked_requests[flask.request.headers[self.TRACKING_HEADER]] = {'request': request.copy()}
 
 
-        @self.app.hook('after_request')
-        def save_response():
+        @self.app.after_request
+        def save_response(response):
             '''
             If the tracking header is set, save the response
             '''
-            if request.headers.get(self.TRACKING_HEADER):
-                self.tracked_requests[request.headers[self.TRACKING_HEADER]]['response'] = response
+            if flask.request.headers.get(self.TRACKING_HEADER):
+                self.tracked_requests[flask.request.headers[self.TRACKING_HEADER]]['response'] = response
+
+            return response
 
         @self.app.route('/', defaults={'path': ''})
         @self.app.route('/<path:path>')
         def catch_all(path=''):
             # get path key
             if path in self.handlers:
-                return self.handlers[path](request)
+                return self.handlers[path](flask.request)
 
             # return a 404 since we didn't find it
             return 'defualtreturn: ' + path + '\n'
@@ -156,14 +139,10 @@ class DynamicHTTPEndpoint(threading.Thread):
         del self.handlers[path]
 
     def run(self):
-        self.server = gevent.wsgi.WSGIServer(('', 0),
-                                              self.app.wsgi,
-                                              log=open(os.devnull, 'w'))
-        self.server.start()
+        self.server = make_server('',
+                                  0,
+                                  self.app.wsgi_app)
         # mark it as ready
         self.ready.set()
         # serve it
-        try:
-            self.server._stop_event.wait()
-        finally:
-            gevent.greenlet.Greenlet.spawn(self.server.stop).join()
+        self.server.serve_forever()

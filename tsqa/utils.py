@@ -42,7 +42,6 @@ def merge_dicts(*args):
     return ret
 
 
-# TODO: move to utils library
 def configure_list(configure):
     ret = []
     for k, v in configure.iteritems():

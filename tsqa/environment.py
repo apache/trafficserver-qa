@@ -159,7 +159,7 @@ class Layout:
     # know. Maybe we can deal with that by overriding config in the environment
     # when we execute tools.
     suffixes = {
-        'bindir': 'bin',
+        'bindir': 'usr/bin',
         'includedir': 'include',
         'libdir': 'lib',
         'logdir': 'var/log',
@@ -230,10 +230,13 @@ class Layout:
 
 class Environment:
     def __exec_cop(self):
-        path = os.path.join(self.layout.bindir, 'traffic_cop')
+        path = os.path.join(self.layout.bindir, 'traffic_server')  # TODO: change back to traffic_cop
         logfile = os.path.join(self.layout.logdir, 'cop.log')
-        cmd = [path, '--debug', '--stdout']
-        environ = {'TS_ROOT': self.layout.prefix}
+        #cmd = [path, '--debug', '--stdout']  # TODO: for traffic_cop
+        cmd = [path]
+
+        environ = copy.copy(os.environ)
+        environ['TS_ROOT'] = self.layout.prefix
 
         # XXX We ought to be pointing traffic_cop to its records.config using
         # proxy.config.config_dir in the environment, but traffic_cop doesn't
@@ -241,8 +244,11 @@ class Environment:
         with open(os.path.join(self.layout.logdir, 'cop.log'), 'w+') as logfile:
             self.cop = subprocess.Popen(cmd,
                                         env=environ,
-                                        stdout=logfile,
-                                        stderr=logfile)
+                                        #stdout=logfile,
+                                        #stderr=logfile,
+                                        )
+            import time
+            time.sleep(3)
 
     def __init__(self, layout=None):
         """
@@ -274,17 +280,22 @@ class Environment:
         """
         # First, make the prefix directory.
         if self.layout is None:
-            self.layout = Layout(tempfile.mkdtemp())
+            #self.layout = Layout(tempfile.mkdtemp())
+            self.layout = Layout('/tmp/tmpVzYCTb')
         else:
             os.makedirs(self.layout.prefix)
 
-        # Take constant data directories from the parent environment.
-        for d in ('bindir', 'includedir', 'libdir', 'plugindir'):
-            setattr(self.layout, d, getattr(layout, d))
-
-        os.makedirs(self.layout.logdir)
-        os.makedirs(self.layout.runtimedir)
-        shutil.copytree(layout.sysconfdir, self.layout.sysconfdir, symlinks=True, ignore=None)
+        # TODO: remove try/except
+        try:
+            # copy all files from old layout to new one
+            for item in os.listdir(layout.prefix):
+                shutil.copytree(os.path.join(layout.prefix, item),
+                                os.path.join(self.layout.prefix, item),
+                                symlinks=True,
+                                ignore=None,
+                                )
+        except:
+            pass
 
         self.overrides = {
             'proxy.config.config_dir': self.layout.sysconfdir,
@@ -295,6 +306,8 @@ class Environment:
             'proxy.config.local_state_dir': self.layout.runtimedir,
         }
 
+        # TODO: re-enable
+        return
         # Append records.config overrides.
         with open(os.path.join(self.layout.sysconfdir, 'records.config'), 'a+') as records:
             for k, v in self.overrides.iteritems():
@@ -306,7 +319,7 @@ class Environment:
         installed files.
         """
         self.stop()
-        shutil.rmtree(self.layout.prefix, ignore_errors=True)
+        #shutil.rmtree(self.layout.prefix, ignore_errors=True)
         self.layout = Layout(None)
 
     def start(self):
@@ -314,8 +327,11 @@ class Environment:
         self.__exec_cop()
 
     # TODO: more graceful stop?
+    # TODO: raise exception when you call stop when its not started?
     def stop(self):
-        self.cop.kill()
+        if self.cop is not None:
+            self.cop.kill()
+            self.cop.terminate()  # TODO: remove?? or wait...
 
     def running(self):
         return self.cop is not None and self.cop.returncode is not None  # its running if it hasn't died

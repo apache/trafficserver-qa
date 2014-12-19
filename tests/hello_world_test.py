@@ -31,7 +31,7 @@ class TestEnvironmentCase(tsqa.test_cases.EnvironmentCase):
 class TestDynamicHTTPEndpointCase(tsqa.test_cases.DynamicHTTPEndpointCase):
     def test_base(self):
         ret = requests.get(self.endpoint_url('/footest'))
-        assert ret.status_code == 200
+        self.assertEqual(ret.status_code, 404)
 
     def test_endpoint_url(self):
         assert self.endpoint_url() == 'http://127.0.0.1:{0}'.format(self.http_endpoint.address[1])

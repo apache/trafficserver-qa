@@ -24,17 +24,23 @@ class EnvironmentCase(unittest.TestCase):
         ef = tsqa.environment.EnvironmentFactory(SOURCE_DIR, os.path.join(TMP_DIR, 'base_envs'))
         cls.environment = ef.get_environment()
 
+    @classmethod
+    def tearDownClass(cls):
+        # call parent destructor
+        super(EnvironmentCase, cls).tearDownClass()
+        cls.environment.destroy()  # this will tear down any processes that we started
+
 
 class DynamicHTTPEndpointCase(unittest.TestCase):
     '''
     This class will set up a dynamic http endpoint that is local to this class
     '''
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls, port=0):
         # call parent constructor
         super(DynamicHTTPEndpointCase, cls).setUpClass()
 
-        cls.http_endpoint = tsqa.endpoint.DynamicHTTPEndpoint()
+        cls.http_endpoint = tsqa.endpoint.DynamicHTTPEndpoint(port=port)
         cls.http_endpoint.start()
 
         cls.http_endpoint.ready.wait()

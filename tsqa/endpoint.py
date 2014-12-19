@@ -51,12 +51,14 @@ class DynamicHTTPEndpoint(threading.Thread):
     def address(self):
         return (self.server.server_address, self.server.server_port)
 
-    def __init__(self):
+    def __init__(self, port=0):
         threading.Thread.__init__(self)
         # dict to store request data in
         self.tracked_requests = {}
 
         self.daemon = True
+
+        self.port = port
 
         self.ready = threading.Event()
 
@@ -94,7 +96,7 @@ class DynamicHTTPEndpoint(threading.Thread):
                 return self.handlers[path](flask.request)
 
             # return a 404 since we didn't find it
-            return 'defualtreturn: ' + path + '\n'
+            return ('', 404)
 
     def get_tracking_key(self):
         '''
@@ -140,7 +142,7 @@ class DynamicHTTPEndpoint(threading.Thread):
 
     def run(self):
         self.server = make_server('',
-                                  0,
+                                  self.port,
                                   self.app.wsgi_app)
         # mark it as ready
         self.ready.set()

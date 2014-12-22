@@ -4,6 +4,8 @@ import os
 import copy
 import shutil
 import json
+
+
 from utils import merge_dicts, configure_list, BuildCache, run_sync_command
 
 
@@ -43,7 +45,7 @@ class EnvironmentFactory(object):
         Autoreconf to make the configure script
         '''
         # run autoreconf in source tree
-        run_sync_command(['autoreconf'],
+        run_sync_command(['autoreconf', '-if'],
                          cwd=self.source_dir,
                          env=self.default_env,
                          stdout=subprocess.PIPE,
@@ -103,10 +105,6 @@ class EnvironmentFactory(object):
 
         key = self._get_key(configure, env)
 
-        # TODO: remove, this is a hack for local dev
-        if key not in self.environment_stash:
-            key = self.environment_stash.iterkeys().next()
-
         # if we don't have it built already, lets build it
         if key not in self.environment_stash:
             self.autoreconf()
@@ -159,7 +157,7 @@ class Layout:
     # know. Maybe we can deal with that by overriding config in the environment
     # when we execute tools.
     suffixes = {
-        'bindir': 'usr/bin',
+        'bindir': 'bin',
         'includedir': 'include',
         'libdir': 'lib',
         'logdir': 'var/log',
@@ -167,31 +165,6 @@ class Layout:
         'runtimedir': 'var/run',
         'sysconfdir': 'etc/trafficserver',
     }
-
-    configs = (
-        'cache.config',
-        'cluster.config',
-        'congestion.config',
-        'hosting.config',
-        'icp.config',
-        'ip_allow.config',
-        'log_hosts.config',
-        'logs_xml.config',
-        'parent.config',
-        'plugin.config',
-        'prefetch.config',
-        'records.config',
-        'remap.config',
-        'socks.config',
-        'splitdns.config',
-        'ssl_multicert.config',
-        'stats.config.xml',
-        'storage.config',
-        'trafficserver-release',
-        'update.config',
-        'vaddrs.config',
-        'volume.config',
-    )
 
     """
     The Layout class is responsible for the set of installation paths within a
@@ -230,10 +203,9 @@ class Layout:
 
 class Environment:
     def __exec_cop(self):
-        path = os.path.join(self.layout.bindir, 'traffic_server')  # TODO: change back to traffic_cop
+        path = os.path.join(self.layout.bindir, 'traffic_cop')
         logfile = os.path.join(self.layout.logdir, 'cop.log')
-        #cmd = [path, '--debug', '--stdout']  # TODO: for traffic_cop
-        cmd = [path]
+        cmd = [path, '--debug', '--stdout']
 
         environ = copy.copy(os.environ)
         environ['TS_ROOT'] = self.layout.prefix
@@ -280,22 +252,17 @@ class Environment:
         """
         # First, make the prefix directory.
         if self.layout is None:
-            #self.layout = Layout(tempfile.mkdtemp())
-            self.layout = Layout('/tmp/tmpVzYCTb')
+            self.layout = Layout(tempfile.mkdtemp())
         else:
             os.makedirs(self.layout.prefix)
 
-        # TODO: remove try/except
-        try:
-            # copy all files from old layout to new one
-            for item in os.listdir(layout.prefix):
-                shutil.copytree(os.path.join(layout.prefix, item),
-                                os.path.join(self.layout.prefix, item),
-                                symlinks=True,
-                                ignore=None,
-                                )
-        except:
-            pass
+        # copy all files from old layout to new one
+        for item in os.listdir(layout.prefix):
+            shutil.copytree(os.path.join(layout.prefix, item),
+                            os.path.join(self.layout.prefix, item),
+                            symlinks=True,
+                            ignore=None,
+                            )
 
         self.overrides = {
             'proxy.config.config_dir': self.layout.sysconfdir,
@@ -306,8 +273,6 @@ class Environment:
             'proxy.config.local_state_dir': self.layout.runtimedir,
         }
 
-        # TODO: re-enable
-        return
         # Append records.config overrides.
         with open(os.path.join(self.layout.sysconfdir, 'records.config'), 'a+') as records:
             for k, v in self.overrides.iteritems():

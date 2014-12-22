@@ -9,11 +9,12 @@ unittest = tsqa.utils.import_unittest()
 
 import os
 
+
+# Example environment case
 class EnvironmentCase(unittest.TestCase):
     '''
     This class will get an environment (which is unique) but won't start it
     '''
-
     @classmethod
     def setUpClass(cls):
         # call parent constructor

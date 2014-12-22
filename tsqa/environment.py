@@ -248,7 +248,7 @@ class Environment:
                                         #stderr=logfile,
                                         )
             import time
-            time.sleep(3)
+            time.sleep(3)  # TODO: wait or the process to listen?
 
     def __init__(self, layout=None):
         """

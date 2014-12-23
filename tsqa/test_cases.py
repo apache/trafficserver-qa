@@ -24,7 +24,7 @@ class EnvironmentCase(unittest.TestCase):
         cls.environment = cls.getEnv()
 
         # call env setup, so people can change configs etc
-        cls.setUpEnv()
+        cls.setUpEnv(cls.environment)
 
         # start ATS
         cls.environment.start()
@@ -41,7 +41,7 @@ class EnvironmentCase(unittest.TestCase):
         return ef.get_environment()
 
     @classmethod
-    def setUpEnv(cls):
+    def setUpEnv(cls, env):
         '''
         This funciton is responsible for setting up the environment for this fixture
         This includes everything pre-daemon start
@@ -64,9 +64,6 @@ class DynamicHTTPEndpointCase(unittest.TestCase):
     '''
     @classmethod
     def setUpClass(cls, port=0):
-        # call parent constructor
-        super(DynamicHTTPEndpointCase, cls).setUpClass()
-
         cls.http_endpoint = tsqa.endpoint.DynamicHTTPEndpoint(port=port)
         cls.http_endpoint.start()
 
@@ -75,10 +72,16 @@ class DynamicHTTPEndpointCase(unittest.TestCase):
         # create local requester object
         cls.track_requests = tsqa.endpoint.TrackingRequests(cls.http_endpoint)
 
+        # Do this last, so we can get our stuff registered
+        # call parent constructor
+        super(DynamicHTTPEndpointCase, cls).setUpClass()
+
     def endpoint_url(self, path=''):
         '''
         Get the url for the local dynamic endpoint given a path
         '''
+        if path and not path.startswith('/'):
+            path = '/' + path
         return 'http://127.0.0.1:{0}{1}'.format(self.http_endpoint.address[1],
                                                 path)
 

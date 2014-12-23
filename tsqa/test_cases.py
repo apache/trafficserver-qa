@@ -4,6 +4,7 @@ Some base test cases that do environment handling for you
 
 import tsqa.endpoint
 import tsqa.environment
+import tsqa.configs
 import tsqa.utils
 unittest = tsqa.utils.import_unittest()
 
@@ -28,6 +29,15 @@ class EnvironmentCase(unittest.TestCase):
 
         # start ATS
         cls.environment.start()
+
+        cls._config_cache = {}
+
+    @property
+    def records_config(self):
+        if 'records.config' not in self._config_cache:
+            cfg_dir = os.path.join(self.environment.layout.prefix, 'etc', 'trafficserver')
+            self._config_cache['records.config'] = tsqa.configs.RecordsConfig(os.path.join(cfg_dir, 'records.config'))
+        return self._config_cache['records.config']
 
     @classmethod
     def getEnv(cls):

@@ -11,7 +11,7 @@ from utils import merge_dicts, configure_list, BuildCache, run_sync_command
 
 class EnvironmentFactory(object):
     '''
-    Mke builds of <SOURCE CODE> with optional env/configure flags
+    Make builds of <SOURCE CODE> with optional env/configure flags
     This uses a BuildCache to maintain a set of unique "layouts" (built code on disk)
     and will return copies of these in environments to callers
     '''
@@ -210,6 +210,11 @@ class Environment:
         environ = copy.copy(os.environ)
         environ['TS_ROOT'] = self.layout.prefix
 
+        if environ.has_key('LD_LIBRARY_PATH'):
+            environ['LD_LIBRARY_PATH'] = self.layout.libdir + ':' + environ['LD_LIBRARY_PATH']
+        else:
+            environ['LD_LIBRARY_PATH'] = self.layout.libdir
+
         # XXX We ought to be pointing traffic_cop to its records.config using
         # proxy.config.config_dir in the environment, but traffic_cop doesn't
         # look at that (yet).
@@ -306,7 +311,7 @@ class Environment:
 
 
 if __name__ == '__main__':
-    SOURCE_DIR = '/home/thjackso/src/trafficserver'
-    TMP_DIR = '/home/thjackso/src/tsqa/tmp'
+    SOURCE_DIR = os.getenv('TSQA_SRC_DIR', '~/trafficserver')
+    TMP_DIR = os.getenv('TSQA_TMP_DIR','/tmp/tsqa')
     ef = EnvironmentFactory(SOURCE_DIR, os.path.join(TMP_DIR, 'base_envs'))
     ef.get_environment()

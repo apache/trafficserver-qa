@@ -107,7 +107,8 @@ class EnvironmentFactory(object):
         # only these keys
         # TODO: only de-dupe for get_key?? for now we don't care since all of these
         # have no effect on build, but if we add one that does we'll care
-        for blacklisted_key in ('PWD', 'OLDPWD'):  # TODO: global?
+        # TODO: global?
+        for blacklisted_key in ('PWD', 'OLDPWD', 'LD_LIBRARY_PATH', 'TS_ROOT'):
             if blacklisted_key in env:
                 del env[blacklisted_key]
 

@@ -304,7 +304,7 @@ class Environment:
         installed files.
         """
         self.stop()
-        #shutil.rmtree(self.layout.prefix, ignore_errors=True)
+        shutil.rmtree(self.layout.prefix, ignore_errors=True)
         self.layout = Layout(None)
 
     def start(self):

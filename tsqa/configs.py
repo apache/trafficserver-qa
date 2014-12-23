@@ -23,6 +23,11 @@ class Config(object):
 class RecordsConfig(Config, dict):
     '''
     Create a "dict" representation of records.config
+
+    This can be accessed as a multi-level dictionary
+
+    such as:
+    rc['CONFIG']['proxy.config.log.hostname']
     '''
     kind_map = {'STRING': str,
                 'INT': int,
@@ -34,7 +39,7 @@ class RecordsConfig(Config, dict):
                         float: 'FLOAT',
                         }
 
-    line_template = 'CONFIG {name} {kind} {val}\n'
+    line_template = '{top_kind} {name} {kind} {val}\n'
 
     def __init__(self, filename):
         dict.__init__(self)
@@ -43,20 +48,30 @@ class RecordsConfig(Config, dict):
         self.load()
 
     def load(self):
-        self._config = {}
         with open(self.filename, 'r') as fh:
             for line in fh:
                 line = line.strip()
                 # skip comments
-                if line.startswith('#'):
+                if not line or line.startswith('#'):
                     continue
-                _, name, kind, val = line.split(' ', 3)
-                self[name] = self.kind_map[kind](val)
+                top_kind, name, kind, val = line.split(' ', 3)
+                if top_kind not in self:
+                    self[top_kind] = {}
+                self[top_kind][name] = self.kind_map[kind](val)
 
-    def write(self, dest):
-        with open(dest, 'w') as fh:
-            for name, val in self.iteritems():
-                fh.write(self.line_template.format(name=name,
-                                                   kind=self.reverse_kind_map[type(val)],
-                                                   val=val))
+    def write(self):
+        with open(self.filename, 'w') as fh:
+            for top_kind, config_map in self.iteritems():
+                for name, val in config_map.iteritems():
+                    fh.write(self.line_template.format(top_kind=top_kind,
+                                                       name=name,
+                                                       kind=self.reverse_kind_map[type(val)],
+                                                       val=val))
+
+if __name__ == '__main__':
+    rc = RecordsConfig('/etc/trafficserver/records.config')
+    rc['CONFIG']['proxy.config.log.hostname']
+    rc['CONFIG'].update({'proxy.config.log.hostname': 'foo'})
+    rc.filename = '/tmp/recordstest.config'
+    rc.write()
 

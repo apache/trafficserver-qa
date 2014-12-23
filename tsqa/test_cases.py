@@ -20,13 +20,39 @@ class EnvironmentCase(unittest.TestCase):
         # call parent constructor
         super(EnvironmentCase, cls).setUpClass()
 
+        # get an environment
+        cls.environment = cls.getEnv()
+
+        # call env setup, so people can change configs etc
+        cls.setUpEnv()
+
+        # start ATS
+        cls.environment.start()
+
+    @classmethod
+    def getEnv(cls):
+        '''
+        This function is responsible for returning an environment. The default
+        is to build ATS and return a copy of an environment
+        '''
         SOURCE_DIR = os.getenv('TSQA_SRC_DIR', '~/trafficserver')
         TMP_DIR = os.getenv('TSQA_TMP_DIR','/tmp/tsqa')
         ef = tsqa.environment.EnvironmentFactory(SOURCE_DIR, os.path.join(TMP_DIR, 'base_envs'))
-        cls.environment = ef.get_environment()
+        return ef.get_environment()
+
+    @classmethod
+    def setUpEnv(cls):
+        '''
+        This funciton is responsible for setting up the environment for this fixture
+        This includes everything pre-daemon start
+        '''
+        pass
 
     @classmethod
     def tearDownClass(cls):
+        # stop ATS
+        cls.environment.stop()
+
         # call parent destructor
         super(EnvironmentCase, cls).tearDownClass()
         cls.environment.destroy()  # this will tear down any processes that we started

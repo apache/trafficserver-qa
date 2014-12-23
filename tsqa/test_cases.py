@@ -28,7 +28,7 @@ class EnvironmentCase(unittest.TestCase):
 
         # create a bunch of config objects that people can access/modify
         cls.configs = {
-            'records.config': tsqa.configs.RecordsConfig(os.path.join(cfg_dir, 'records.config'))
+            'records.config': tsqa.configs.RecordsConfig(os.path.join(cls.environment.layout.sysconfdir, 'records.config'))
         }
 
         # call env setup, so people can change configs etc
@@ -67,6 +67,14 @@ class EnvironmentCase(unittest.TestCase):
         super(EnvironmentCase, cls).tearDownClass()
         cls.environment.destroy()  # this will tear down any processes that we started
 
+    # Some helpful properties
+    @property
+    def proxies(self):
+        '''
+        Return a dict of schema -> proxy. This is primarily used for requests
+        '''
+        # TODO: create a better dict by parsing the config-- to handle http/https ports in the string
+        return {'http': 'http://127.0.0.1:{0}'.format(self.configs['records.config']['CONFIG']['proxy.config.http.server_ports'])}
 
 class DynamicHTTPEndpointCase(unittest.TestCase):
     '''

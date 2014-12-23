@@ -9,7 +9,7 @@ from utils import merge_dicts, configure_list, BuildCache, run_sync_command
 
 class EnvironmentFactory(object):
     '''
-    Mke builds of <SOURCE CODE> with optional env/configure flags
+    Make builds of <SOURCE CODE> with optional env/configure flags
     This uses a BuildCache to maintain a set of unique "layouts" (built code on disk)
     and will return copies of these in environments to callers
     '''
@@ -104,8 +104,8 @@ class EnvironmentFactory(object):
         key = self._get_key(configure, env)
 
         # TODO: remove, this is a hack for local dev
-        if key not in self.environment_stash:
-            key = self.environment_stash.iterkeys().next()
+        #if key not in self.environment_stash:
+        #    key = self.environment_stash.iterkeys().next()
 
         # if we don't have it built already, lets build it
         if key not in self.environment_stash:
@@ -159,7 +159,7 @@ class Layout:
     # know. Maybe we can deal with that by overriding config in the environment
     # when we execute tools.
     suffixes = {
-        'bindir': 'usr/bin',
+        'bindir': 'bin',
         'includedir': 'include',
         'libdir': 'lib',
         'logdir': 'var/log',
@@ -237,6 +237,11 @@ class Environment:
 
         environ = copy.copy(os.environ)
         environ['TS_ROOT'] = self.layout.prefix
+
+        if environ.has_key('LD_LIBRARY_PATH'):
+            environ['LD_LIBRARY_PATH'] = self.layout.libdir + ':' + environ['LD_LIBRARY_PATH']
+        else:
+            environ['LD_LIBRARY_PATH'] = self.layout.libdir
 
         # XXX We ought to be pointing traffic_cop to its records.config using
         # proxy.config.config_dir in the environment, but traffic_cop doesn't
@@ -341,7 +346,7 @@ class Environment:
 
 
 if __name__ == '__main__':
-    SOURCE_DIR = '/home/thjackso/src/trafficserver'
-    TMP_DIR = '/home/thjackso/src/tsqa/tmp'
+    SOURCE_DIR = os.getenv('TSQA_SRC_DIR', '~/trafficserver')
+    TMP_DIR = os.getenv('TSQA_TMP_DIR','/tmp/tsqa')
     ef = EnvironmentFactory(SOURCE_DIR, os.path.join(TMP_DIR, 'base_envs'))
     ef.get_environment()

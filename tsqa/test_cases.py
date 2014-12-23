@@ -19,8 +19,8 @@ class EnvironmentCase(unittest.TestCase):
         # call parent constructor
         super(EnvironmentCase, cls).setUpClass()
 
-        SOURCE_DIR = '/home/thjackso/src/trafficserver'
-        TMP_DIR = '/home/thjackso/src/tsqa/tmp'
+        SOURCE_DIR = os.getenv('TSQA_SRC_DIR', '~/trafficserver')
+        TMP_DIR = os.getenv('TSQA_TMP_DIR','/tmp/tsqa')
         ef = tsqa.environment.EnvironmentFactory(SOURCE_DIR, os.path.join(TMP_DIR, 'base_envs'))
         cls.environment = ef.get_environment()
 

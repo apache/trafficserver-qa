@@ -6,7 +6,8 @@ import shutil
 import json
 
 
-from utils import merge_dicts, configure_list, BuildCache, run_sync_command
+import tsqa.configs
+import tsqa.utils
 
 
 class EnvironmentFactory(object):
@@ -23,7 +24,7 @@ class EnvironmentFactory(object):
                  default_env=None):
         # if no one made the cache class, make it
         if self.class_environment_stash is None:
-            self.class_environment_stash = BuildCache(env_cache_dir)
+            self.class_environment_stash = tsqa.utils.BuildCache(env_cache_dir)
 
         # TODO: ensure this directory exists? (and is git?)
         self.source_dir = source_dir
@@ -45,12 +46,12 @@ class EnvironmentFactory(object):
         Autoreconf to make the configure script
         '''
         # run autoreconf in source tree
-        run_sync_command(['autoreconf', '-if'],
-                         cwd=self.source_dir,
-                         env=self.default_env,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         )
+        tsqa.utils.run_sync_command(['autoreconf', '-if'],
+                                    cwd=self.source_dir,
+                                    env=self.default_env,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    )
 
     @property
     def source_hash(self):
@@ -58,11 +59,11 @@ class EnvironmentFactory(object):
         Return the git hash of the source directory
         '''
         if not hasattr(self , '_source_hash'):
-            tmp, _ = run_sync_command(['git', 'rev-parse', 'HEAD'],
-                                      cwd=self.source_dir,
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE,
-                                      )
+            tmp, _ = tsqa.utils.run_sync_command(['git', 'rev-parse', 'HEAD'],
+                                                 cwd=self.source_dir,
+                                                 stdout=subprocess.PIPE,
+                                                 stderr=subprocess.PIPE,
+                                                 )
             self._source_hash = tmp.strip()
         return self._source_hash
 
@@ -97,11 +98,11 @@ class EnvironmentFactory(object):
         if configure is None:
             configure = self.default_configure
         else:
-            configure = merge_dicts(self.default_configure, configure)
+            configure = tsqa.utils.merge_dicts(self.default_configure, configure)
         if env is None:
             env = self.default_env
         else:
-            env = merge_dicts(self.default_env, env)
+            env = tsqa.utils.merge_dicts(self.default_env, env)
 
         # blacklist a few things from env, so as to de-dupe builds with diffs of
         # only these keys
@@ -122,30 +123,30 @@ class EnvironmentFactory(object):
             builddir = tempfile.mkdtemp()
 
             # configure
-            args = [os.path.join(self.source_dir, 'configure'), '--prefix=/'] + configure_list(configure)
-            run_sync_command(args,
-                             cwd=builddir,
-                             env=env,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             )
+            args = [os.path.join(self.source_dir, 'configure'), '--prefix=/'] + tsqa.utils.configure_list(configure)
+            tsqa.utils.run_sync_command(args,
+                                        cwd=builddir,
+                                        env=env,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        )
 
             # make
-            run_sync_command(['make', '-j'],
-                             cwd=builddir,
-                             env=env,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             )
+            tsqa.utils.run_sync_command(['make', '-j'],
+                                        cwd=builddir,
+                                        env=env,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        )
             installdir = tempfile.mkdtemp(dir=self.env_cache_dir)
 
             # make install
-            run_sync_command(['make', 'install', 'DESTDIR={0}'.format(installdir)],
-                             cwd=builddir,
-                             env=env,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             )
+            tsqa.utils.run_sync_command(['make', 'install', 'DESTDIR={0}'.format(installdir)],
+                                        cwd=builddir,
+                                        env=env,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        )
 
             shutil.rmtree(builddir)  # delete builddir, not useful after install
             # stash the env
@@ -284,19 +285,18 @@ class Environment:
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
 
-        self.overrides = {
+        # overwrite a few things that need to be changed to have a unique env
+        records = tsqa.configs.RecordsConfig(os.path.join(self.layout.sysconfdir, 'records.config'))
+        records['CONFIG'].update({
             'proxy.config.config_dir': self.layout.sysconfdir,
             'proxy.config.body_factory.template_sets_dir': os.path.join(self.layout.sysconfdir, 'body_factory'),
             'proxy.config.plugin.plugin_dir': self.layout.plugindir,
             'proxy.config.bin_path': self.layout.bindir,
             'proxy.config.log.logfile_dir': self.layout.logdir,
             'proxy.config.local_state_dir': self.layout.runtimedir,
-        }
-
-        # Append records.config overrides.
-        with open(os.path.join(self.layout.sysconfdir, 'records.config'), 'a+') as records:
-            for k, v in self.overrides.iteritems():
-                records.write('CONFIG {0} STRING {1}\n'.format(k, v))
+            'proxy.config.http.server_ports': str(tsqa.utils.bind_unused_port()[1])  # your own listen port
+        })
+        records.write()
 
     def destroy(self):
         """

@@ -3,7 +3,7 @@ import os
 import json
 import sys
 import subprocess
-
+import socket
 
 # TODO: test
 def import_unittest():
@@ -14,6 +14,19 @@ def import_unittest():
         return __import__('unittest2')
     else:
         return __import__('unittest')
+
+
+def bind_unused_port(interface=''):
+    '''
+    Binds a server socket to an available port on 0.0.0.0.
+
+    Returns a tuple (socket, port).
+    '''
+    sock = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind((interface, 0))  # bind to all interfaces on an ephemeral port
+    port = sock.getsockname()[1]
+    return sock, port
 
 
 # TODO: test

@@ -44,7 +44,7 @@ class EnvironmentCase(unittest.TestCase):
     def setUpEnv(cls, env):
         '''
         This funciton is responsible for setting up the environment for this fixture
-        This includes everything pre-daemon start
+        This includes everything pre-daemon start (configs, certs, etc.)
         '''
         pass
 

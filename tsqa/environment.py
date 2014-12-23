@@ -103,7 +103,17 @@ class EnvironmentFactory(object):
         else:
             env = merge_dicts(self.default_env, env)
 
+        # blacklist a few things from env, so as to de-dupe builds with diffs of
+        # only these keys
+        # TODO: only de-dupe for get_key?? for now we don't care since all of these
+        # have no effect on build, but if we add one that does we'll care
+        for blacklisted_key in ('PWD', 'OLDPWD'):  # TODO: global?
+            if blacklisted_key in env:
+                del env[blacklisted_key]
+
         key = self._get_key(configure, env)
+        # TODO: remove
+        print 'Key is:', key, 'args are:', configure, env
 
         # if we don't have it built already, lets build it
         if key not in self.environment_stash:
@@ -149,7 +159,6 @@ class EnvironmentFactory(object):
         return ret
 
 
-# TODO: make this more configurable??
 class Layout:
     """
     The Layout class is responsible for the set of installation paths within a
@@ -204,9 +213,10 @@ class Layout:
 
 class Environment:
     def __exec_cop(self):
-        path = os.path.join(self.layout.bindir, 'traffic_cop')
+        path = os.path.join(self.layout.bindir, 'traffic_server')  # make traffic_cop
         logfile = os.path.join(self.layout.logdir, 'cop.log')
-        cmd = [path, '--debug', '--stdout']
+        #cmd = [path, '--debug', '--stdout']  # TODO: re-enable when traffic_cop
+        cmd = [path]
 
         environ = copy.copy(os.environ)
         environ['TS_ROOT'] = self.layout.prefix
@@ -246,9 +256,6 @@ class Environment:
         else:
             os.makedirs(self.layout.prefix)
 
-        for d in ('logdir', 'runtimedir', 'sysconfdir'):
-            os.makedirs(getattr(self.layout, d))
-
         # Make any other directories we need.
         os.makedirs(os.path.join(self.layout.sysconfdir, "body_factory"))
 
@@ -269,6 +276,12 @@ class Environment:
                             symlinks=True,
                             ignore=None,
                             )
+
+        # make sure that all suffixes in new layout exist
+        for name in self.layout.suffixes:
+            dirname = getattr(self.layout, name)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
 
         self.overrides = {
             'proxy.config.config_dir': self.layout.sysconfdir,

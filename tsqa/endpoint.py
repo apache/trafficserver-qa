@@ -1,12 +1,12 @@
 # TODO: some request/response class to load the various libary's implementations and allow for comparison
 
 import os
-
 import threading
-from collections import defaultdict
 import requests
-
 import flask
+
+
+from collections import defaultdict
 from wsgiref.simple_server import make_server
 
 # dict of testid -> {client_request, client_response}

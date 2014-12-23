@@ -151,11 +151,16 @@ class EnvironmentFactory(object):
 
 # TODO: make this more configurable??
 class Layout:
+    """
+    The Layout class is responsible for the set of installation paths within a
+    prefixed Traffic Server instance.
+
     # For now, just use a static set of directories relative to TS_ROOT. I
     # don't think that this will actually work in the general case, since there
     # are still a few paths that are defined by the build that you just have to
     # know. Maybe we can deal with that by overriding config in the environment
     # when we execute tools.
+    """
     suffixes = {
         'bindir': 'bin',
         'includedir': 'include',
@@ -166,10 +171,6 @@ class Layout:
         'sysconfdir': 'etc/trafficserver',
     }
 
-    """
-    The Layout class is responsible for the set of installation paths within a
-    prefixed Traffic Server instance.
-    """
     def __init__(self, prefix):
         self.prefix = prefix
 

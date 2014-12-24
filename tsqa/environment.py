@@ -215,30 +215,34 @@ class Layout:
 
 class Environment:
     def __exec_cop(self):
-        path = os.path.join(self.layout.bindir, 'traffic_server')  # make traffic_cop
-        logfile = os.path.join(self.layout.logdir, 'cop.log')
-        #cmd = [path, '--debug', '--stdout']  # TODO: re-enable when traffic_cop
+        # TODO: use traffic_cop/manager? Setuid and gid remove LD_LIBRARY_PATH
+        # so we can't use them for now
+        #path = os.path.join(self.layout.bindir, 'traffic_cop')
+        #cmd = [path, '--debug', '--stdout']
+
+        path = os.path.join(self.layout.bindir, 'traffic_server')
         cmd = [path]
 
         environ = copy.copy(os.environ)
         environ['TS_ROOT'] = self.layout.prefix
 
-        if environ.has_key('LD_LIBRARY_PATH'):
+        if environ.has_key('LD_LIBRARY_PATH') and self.layout.libdir not in environ['LD_LIBRARY_PATH'].split(':'):
             environ['LD_LIBRARY_PATH'] = self.layout.libdir + ':' + environ['LD_LIBRARY_PATH']
         else:
             environ['LD_LIBRARY_PATH'] = self.layout.libdir
 
-        # XXX We ought to be pointing traffic_cop to its records.config using
-        # proxy.config.config_dir in the environment, but traffic_cop doesn't
-        # look at that (yet).
         with open(os.path.join(self.layout.logdir, 'cop.log'), 'w+') as logfile:
             self.cop = subprocess.Popen(cmd,
                                         env=environ,
-                                        #stdout=logfile,
-                                        #stderr=logfile,
+                                        stdout=logfile,
+                                        stderr=logfile,
                                         )
             import time
             time.sleep(3)  # TODO: wait or the process to listen?
+            # TODO: better checking...
+            self.cop.poll()
+            if self.cop.returncode is not None:
+                raise Exception(self.cop.returncode)
 
     def __init__(self, layout=None):
         """
@@ -270,6 +274,7 @@ class Environment:
             self.layout = Layout(tempfile.mkdtemp())
         else:
             os.makedirs(self.layout.prefix)
+        os.chmod(self.layout.prefix, 0777)  # Make the tmp dir readable by all
 
         # copy all files from old layout to new one
         for item in os.listdir(layout.prefix):
@@ -283,7 +288,9 @@ class Environment:
         for name in self.layout.suffixes:
             dirname = getattr(self.layout, name)
             if not os.path.exists(dirname):
-                os.makedirs(dirname)
+                os.makedirs(dirname, 0777)
+            else:
+                os.chmod(dirname, 0777)
 
         # overwrite a few things that need to be changed to have a unique env
         records = tsqa.configs.RecordsConfig(os.path.join(self.layout.sysconfdir, 'records.config'))
@@ -294,9 +301,13 @@ class Environment:
             'proxy.config.bin_path': self.layout.bindir,
             'proxy.config.log.logfile_dir': self.layout.logdir,
             'proxy.config.local_state_dir': self.layout.runtimedir,
-            'proxy.config.http.server_ports': str(tsqa.utils.bind_unused_port()[1])  # your own listen port
+            'proxy.config.http.server_ports': str(tsqa.utils.bind_unused_port()[1]),  # your own listen port
+            'proxy.config.process_manager.mgmt_port': tsqa.utils.bind_unused_port()[1],  # your own listen port
         })
         records.write()
+
+        os.chmod(os.path.join(os.path.dirname(self.layout.runtimedir)), 0777)
+        os.chmod(os.path.join(self.layout.runtimedir), 0777)
 
     def destroy(self):
         """
@@ -304,7 +315,7 @@ class Environment:
         installed files.
         """
         self.stop()
-        shutil.rmtree(self.layout.prefix, ignore_errors=True)
+        #shutil.rmtree(self.layout.prefix, ignore_errors=True)
         self.layout = Layout(None)
 
     def start(self):
@@ -319,6 +330,7 @@ class Environment:
             self.cop.terminate()  # TODO: remove?? or wait...
 
     def running(self):
+        self.cop.poll()
         return self.cop is not None and self.cop.returncode is not None  # its running if it hasn't died
 
     def __del__(self):

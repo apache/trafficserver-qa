@@ -60,6 +60,9 @@ class EnvironmentCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        # TODO: some better checking that we didn't crash
+        if cls.environment.cop is not None and not cls.environment.running:
+            raise Exception('ATS died during the test run')
         # stop ATS
         cls.environment.stop()
 

@@ -315,7 +315,7 @@ class Environment:
         installed files.
         """
         self.stop()
-        #shutil.rmtree(self.layout.prefix, ignore_errors=True)
+        shutil.rmtree(self.layout.prefix, ignore_errors=True)
         self.layout = Layout(None)
 
     def start(self):
@@ -333,6 +333,7 @@ class Environment:
         self.cop.poll()
         return self.cop is not None and self.cop.returncode is not None  # its running if it hasn't died
 
+    # TODO: only do this on success, instead of __del__?
     def __del__(self):
         self.destroy()
 

@@ -177,7 +177,7 @@ class Layout:
         'includedir': 'include',
         'libdir': 'lib',
         'logdir': 'var/log',
-        'plugindir': 'lib/plugins',
+        'plugindir': 'libexec/trafficserver',
         'runtimedir': 'var/run',
         'sysconfdir': 'etc/trafficserver',
     }
@@ -242,7 +242,7 @@ class Environment:
             # TODO: better checking...
             self.cop.poll()
             if self.cop.returncode is not None:
-                raise Exception(self.cop.returncode)
+                raise Exception(self.cop.returncode, self.layout.prefix)
 
     def __init__(self, layout=None):
         """

@@ -16,6 +16,10 @@ class EnvironmentCase(unittest.TestCase):
     '''
     This class will get an environment (which is unique) but won't start it
     '''
+    # TODO: better naming??
+    environment_factory = {'configure': None,
+                           'env': None,
+                           }
     @classmethod
     def setUpClass(cls):
         # call parent constructor
@@ -48,7 +52,7 @@ class EnvironmentCase(unittest.TestCase):
         SOURCE_DIR = os.getenv('TSQA_SRC_DIR', '~/trafficserver')
         TMP_DIR = os.getenv('TSQA_TMP_DIR','/tmp/tsqa')
         ef = tsqa.environment.EnvironmentFactory(SOURCE_DIR, os.path.join(TMP_DIR, 'base_envs'))
-        return ef.get_environment()
+        return ef.get_environment(cls.environment_factory['configure'], cls.environment_factory['env'])
 
     @classmethod
     def setUpEnv(cls, env):

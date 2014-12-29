@@ -3,8 +3,9 @@ import tempfile
 import os
 import copy
 import shutil
-import json
-
+import tsqa.utils
+import logging
+import sys
 
 import tsqa.configs
 import tsqa.utils
@@ -28,7 +29,7 @@ class EnvironmentFactory(object):
 
         # TODO: ensure this directory exists? (and is git?)
         self.source_dir = source_dir
-
+        self.log = tsqa.utils.get_logger()
         self.env_cache_dir = env_cache_dir  # base directory for environment caching
 
         if default_configure is not None:
@@ -45,13 +46,20 @@ class EnvironmentFactory(object):
         '''
         Autoreconf to make the configure script
         '''
+
+        kwargs = {
+            'cwd': self.source_dir,
+            'env': self.default_env,
+            'stdout': subprocess.PIPE,
+            'stderr': subprocess.PIPE
+        }
+
+        if self.log.isEnabledFor(logging.DEBUG):
+            kwargs['stdout'] = sys.stdout.fileno()
+            kwargs['stderr'] = sys.stderr.fileno()
+
         # run autoreconf in source tree
-        tsqa.utils.run_sync_command(['autoreconf', '-if'],
-                                    cwd=self.source_dir,
-                                    env=self.default_env,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    )
+        tsqa.utils.run_sync_command(['autoreconf', '-if'], **kwargs)
 
     @property
     def source_hash(self):
@@ -114,39 +122,34 @@ class EnvironmentFactory(object):
                 del env[blacklisted_key]
 
         key = self._get_key(configure, env)
-        # TODO: remove
-        print 'Key is:', key, 'args are:', configure, env
+        self.log.debug('Key is: %s, args are: %s %s' % (key, configure, env))
 
         # if we don't have it built already, lets build it
         if key not in self.environment_stash:
             self.autoreconf()
             builddir = tempfile.mkdtemp()
 
+            kwargs = {
+                'cwd': builddir,
+                'env': env,
+                'stdout': subprocess.PIPE,
+                'stderr': subprocess.PIPE
+            }
+
+            if self.log.isEnabledFor(logging.DEBUG):
+                kwargs['stdout'] = sys.stdout.fileno()
+                kwargs['stderr'] = sys.stderr.fileno()
+
             # configure
             args = [os.path.join(self.source_dir, 'configure'), '--prefix=/'] + tsqa.utils.configure_list(configure)
-            tsqa.utils.run_sync_command(args,
-                                        cwd=builddir,
-                                        env=env,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        )
+            tsqa.utils.run_sync_command(args, **kwargs)
 
             # make
-            tsqa.utils.run_sync_command(['make', '-j'],
-                                        cwd=builddir,
-                                        env=env,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        )
+            tsqa.utils.run_sync_command(['make', '-j'], **kwargs)
             installdir = tempfile.mkdtemp(dir=self.env_cache_dir)
 
             # make install
-            tsqa.utils.run_sync_command(['make', 'install', 'DESTDIR={0}'.format(installdir)],
-                                        cwd=builddir,
-                                        env=env,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        )
+            tsqa.utils.run_sync_command(['make', 'install', 'DESTDIR={0}'.format(installdir)], **kwargs)
 
             shutil.rmtree(builddir)  # delete builddir, not useful after install
             # stash the env
@@ -184,6 +187,7 @@ class Layout:
 
     def __init__(self, prefix):
         self.prefix = prefix
+        self.log = tsqa.utils.get_logger()
 
     def __getattr__(self, name):
         # Raise an error for suffixes we don't know about
@@ -237,8 +241,8 @@ class Environment:
                                         stdout=logfile,
                                         stderr=logfile,
                                         )
-            import time
-            time.sleep(3)  # TODO: wait or the process to listen?
+            tsqa.utils.poll_interfaces(self.hostports)
+
             # TODO: better checking...
             self.cop.poll()
             if self.cop.returncode is not None:
@@ -248,7 +252,9 @@ class Environment:
         """
         Initialize a new Environment.
         """
+        self.log = tsqa.utils.get_logger()
         self.cop = None
+        self.hostports = []
         if layout:
             self.layout = layout
         else:
@@ -292,6 +298,10 @@ class Environment:
             else:
                 os.chmod(dirname, 0777)
 
+        http_server_port = tsqa.utils.bind_unused_port()[1]
+        manager_mgmt_port = tsqa.utils.bind_unused_port()[1]
+        self.hostports = [('127.0.0.1', http_server_port), ('127.0.0.1', manager_mgmt_port)]
+
         # overwrite a few things that need to be changed to have a unique env
         records = tsqa.configs.RecordsConfig(os.path.join(self.layout.sysconfdir, 'records.config'))
         records['CONFIG'].update({
@@ -301,8 +311,8 @@ class Environment:
             'proxy.config.bin_path': self.layout.bindir,
             'proxy.config.log.logfile_dir': self.layout.logdir,
             'proxy.config.local_state_dir': self.layout.runtimedir,
-            'proxy.config.http.server_ports': str(tsqa.utils.bind_unused_port()[1]),  # your own listen port
-            'proxy.config.process_manager.mgmt_port': tsqa.utils.bind_unused_port()[1],  # your own listen port
+            'proxy.config.http.server_ports': str(http_server_port),  # your own listen port
+            'proxy.config.process_manager.mgmt_port': manager_mgmt_port,  # your own listen port
         })
         records.write()
 
@@ -319,12 +329,15 @@ class Environment:
         self.layout = Layout(None)
 
     def start(self):
+        self.log.debug("Starting traffic cop")
         assert(os.path.isfile(os.path.join(self.layout.sysconfdir, 'records.config')))
         self.__exec_cop()
+        self.log.debug("Started traffic cop: %s", self.cop)
 
     # TODO: more graceful stop?
     # TODO: raise exception when you call stop when its not started?
     def stop(self):
+        self.log.debug("Killing traffic cop: %s", self.cop)
         if self.cop is not None:
             self.cop.kill()
             self.cop.terminate()  # TODO: remove?? or wait...

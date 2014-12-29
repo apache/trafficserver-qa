@@ -10,7 +10,6 @@ unittest = tsqa.utils.import_unittest()
 
 import os
 
-
 # Example environment case
 class EnvironmentCase(unittest.TestCase):
     '''
@@ -24,6 +23,9 @@ class EnvironmentCase(unittest.TestCase):
     def setUpClass(cls):
         # call parent constructor
         super(EnvironmentCase, cls).setUpClass()
+
+        # get a logger
+        cls.log = tsqa.utils.get_logger()
 
         # get an environment
         cls.environment = cls.getEnv()
@@ -68,6 +70,7 @@ class EnvironmentCase(unittest.TestCase):
         if cls.environment.cop is not None and not cls.environment.running:
             raise Exception('ATS died during the test run')
         # stop ATS
+
         cls.environment.stop()
 
         # call parent destructor
@@ -89,6 +92,9 @@ class DynamicHTTPEndpointCase(unittest.TestCase):
     '''
     @classmethod
     def setUpClass(cls, port=0):
+        # get a logger
+        cls.log = tsqa.utils.get_logger()
+
         cls.http_endpoint = tsqa.endpoint.DynamicHTTPEndpoint(port=port)
         cls.http_endpoint.start()
 

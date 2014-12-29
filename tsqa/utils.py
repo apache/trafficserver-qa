@@ -4,6 +4,117 @@ import json
 import sys
 import subprocess
 import socket
+import logging
+import time
+
+tsqa_logger = None
+tsqa_log_level = logging.INFO
+tsqa_log_levels = {
+    'CRITICAL': logging.CRITICAL,
+    'ERROR': logging.ERROR,
+    'WARN': logging.WARNING,
+    'WARNING': logging.WARNING,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG,
+    'NOTSET': logging.NOTSET
+}
+
+def set_log_level(log_level):
+    '''
+    Set the global log level (override with env var TSQA_LOG_LEVEL).  Must be called
+    before first get_logger()
+    '''
+
+    global tsqa_log_level
+    tsqa_log_level = log_level
+
+def get_log_level():
+    '''
+    Get the global log level (override with env var TSQA_LOG_LEVEL).
+    '''
+
+    if os.environ.has_key('TSQA_LOG_LEVEL'):
+        log_level = os.environ['TSQA_LOG_LEVEL'].upper()
+
+        if tsqa_log_levels.has_key(log_level):
+            return tsqa_log_levels[log_level]
+
+    return tsqa_log_level
+
+def set_logger(logger):
+    '''
+    Set/replace the global logger
+    '''
+
+    global tsqa_logger
+    tsqa_logger = logger
+
+def get_logger():
+    '''
+    Get the global logger
+    '''
+
+    global tsqa_logger
+
+    if tsqa_logger:
+        return tsqa_logger
+
+    tsqa_logger = logging.getLogger()
+    tsqa_logger.setLevel(get_log_level())
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(levelname)s %(asctime)-15s - %(message)s"))
+    tsqa_logger.addHandler(handler)
+
+    return tsqa_logger
+
+def poll_interfaces(hostports, **kwargs):
+    '''  Block until we can successfully connect to all ports or timeout
+
+    :param hostports:
+    :param kwargs: optional timeout_sec
+    '''
+
+    connect_timeout_sec = 1
+    poll_sleep_sec = 1
+
+    if kwargs.has_key('timeout_sec'):
+        timeout = time.time() + kwargs['timeout_sec']
+    else:
+        timeout = time.time() + 5
+
+    hostports = hostports[:] # don't modify the caller's hostports
+
+    while timeout > time.time():
+        for hostport in hostports[:]: # don't modify our hostports copy during iteration
+            hostname = hostport[0]
+            port = hostport[1]
+
+            if get_logger().isEnabledFor(logging.DEBUG):
+                get_logger().debug("Checking interface '%s:%d'", hostname, port)
+
+            # This supports IPv6
+
+            try:
+                s = socket.create_connection((hostname, port), timeout=connect_timeout_sec)
+                s.close()
+                hostports.remove(hostport)
+
+                if get_logger().isEnabledFor(logging.DEBUG):
+                    get_logger().debug("Interface '%s:%d' is up", hostname, port)
+            except:
+                pass
+
+        if not hostports:
+            break
+
+        time.sleep(poll_sleep_sec)
+
+    if hostports:
+        raise Exception("Timeout waiting for interfaces: {0}".format(
+                        reduce(lambda x, y: str(x) + ',' + str(y), hostports)))
+
+    if get_logger().isEnabledFor(logging.DEBUG):
+        get_logger().debug("All interfaces are up")
 
 # TODO: test
 def import_unittest():
@@ -37,9 +148,12 @@ def run_sync_command(*args, **kwargs):
     p = subprocess.Popen(*args, **kwargs)
     stdout, stderr = p.communicate()
     if p.returncode != 0:
-        raise Exception('Error running: {0}\n{1}'.format(args[0], stderr))
-    return stdout, stderr
+        if stderr:
+            raise Exception('Error {0} running: {1}\n{2}'.format(p.returncode, args[0], stderr))
+        else:
+            raise Exception('Error {0} running: {1}'.format(p.returncode, args[0]))
 
+    return stdout, stderr
 
 def merge_dicts(*args):
     '''

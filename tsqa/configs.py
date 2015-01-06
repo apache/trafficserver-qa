@@ -7,6 +7,10 @@ class Config(object):
         self.filename = filename
         self.load()
 
+    def add_lines(self, lines):
+        for line in lines:
+            self.add_line(line)
+
     def load(self):
         with open(self.filename, 'r') as fh:
             self.contents = fh.read()
@@ -18,6 +22,10 @@ class Config(object):
         with open(self.filename, 'w') as fh:
             fh.write(self.contents)
 
+    def add_line(self, line):
+        if not line.endswith('\n'):
+            line += '\n'
+        self.contents += line
 
 
 class RecordsConfig(Config, dict):
@@ -47,17 +55,23 @@ class RecordsConfig(Config, dict):
 
         self.load()
 
+    def _load_line(self, line):
+        line = line.strip()
+        # skip comments
+        if not line or line.startswith('#'):
+            return
+        top_kind, name, kind, val = line.split(' ', 3)
+        if top_kind not in self:
+            self[top_kind] = {}
+        self[top_kind][name] = self.kind_map[kind](val)
+
     def load(self):
         with open(self.filename, 'r') as fh:
             for line in fh:
-                line = line.strip()
-                # skip comments
-                if not line or line.startswith('#'):
-                    continue
-                top_kind, name, kind, val = line.split(' ', 3)
-                if top_kind not in self:
-                    self[top_kind] = {}
-                self[top_kind][name] = self.kind_map[kind](val)
+                self._load_line(line)
+
+    def add_line(self, line):
+        self._load_line(line)
 
     def write(self):
         with open(self.filename, 'w') as fh:

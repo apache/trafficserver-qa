@@ -34,12 +34,20 @@ class EnvironmentCase(unittest.TestCase):
         cfg_dir = os.path.join(cls.environment.layout.prefix, 'etc', 'trafficserver')
 
         # create a bunch of config objects that people can access/modify
-        cls.configs = {
-            'records.config': tsqa.configs.RecordsConfig(os.path.join(cls.environment.layout.sysconfdir, 'records.config'))
-        }
+        # classes that override our default config naming
+        config_classes = {'records.config': tsqa.configs.RecordsConfig}
+        # create a mapping of config-name -> config-obj
+        cls.configs = {}
+        for name in os.listdir(cls.environment.layout.sysconfdir):
+            path = os.path.join(cls.environment.layout.sysconfdir, name)
+            if os.path.isfile(path):
+                cls.configs[name] = config_classes.get(name, tsqa.configs.Config)(path)
 
         # call env setup, so people can change configs etc
         cls.setUpEnv(cls.environment)
+
+        for _, cfg in cls.configs.iteritems():
+            cfg.write()
 
         # start ATS
         cls.environment.start()

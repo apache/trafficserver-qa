@@ -79,7 +79,6 @@ class EnvironmentCase(unittest.TestCase):
         if cls.environment.cop is not None and not cls.environment.running:
             raise Exception('ATS died during the test run')
         # stop ATS
-
         cls.environment.stop()
 
         # call parent destructor

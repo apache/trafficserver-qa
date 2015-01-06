@@ -243,7 +243,6 @@ class Environment:
                                         )
             tsqa.utils.poll_interfaces(self.hostports)
 
-            # TODO: better checking...
             self.cop.poll()
             if self.cop.returncode is not None:
                 raise Exception(self.cop.returncode, self.layout.prefix)
@@ -254,6 +253,7 @@ class Environment:
         """
         self.log = logging.getLogger(__name__)
         self.cop = None
+        # TODO: parse config? Don't like the separate hostports...
         self.hostports = []
         if layout:
             self.layout = layout
@@ -336,8 +336,8 @@ class Environment:
         self.__exec_cop()
         self.log.debug("Started traffic cop: %s", self.cop)
 
+    # TODO: exception if already stopped?
     # TODO: more graceful stop?
-    # TODO: raise exception when you call stop when its not started?
     def stop(self):
         self.log.debug("Killing traffic cop: %s", self.cop)
         if self.cop is not None:
@@ -348,7 +348,7 @@ class Environment:
         if self.cop is None:
             return False
         self.cop.poll()
-        return self.cop is not None and self.cop.returncode is not None  # its running if it hasn't died
+        return self.cop.returncode is not None  # its running if it hasn't died
 
     # TODO: only do this on success, instead of __del__?
     def __del__(self):

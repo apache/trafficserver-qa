@@ -1,6 +1,7 @@
 '''
 Some base test cases that do environment handling for you
 '''
+import logging
 
 import tsqa.endpoint
 import tsqa.environment
@@ -25,7 +26,7 @@ class EnvironmentCase(unittest.TestCase):
         super(EnvironmentCase, cls).setUpClass()
 
         # get a logger
-        cls.log = tsqa.utils.get_logger()
+        cls.log = logging.getLogger(__name__)
 
         # get an environment
         cls.environment = cls.getEnv()
@@ -93,7 +94,7 @@ class DynamicHTTPEndpointCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls, port=0):
         # get a logger
-        cls.log = tsqa.utils.get_logger()
+        cls.log = logging.getLogger(__name__)
 
         cls.http_endpoint = tsqa.endpoint.DynamicHTTPEndpoint(port=port)
         cls.http_endpoint.start()

@@ -4,11 +4,11 @@ import os
 import copy
 import shutil
 import tsqa.utils
-import logging
 import sys
 
 import tsqa.configs
 import tsqa.utils
+import logging
 
 
 class EnvironmentFactory(object):
@@ -29,7 +29,7 @@ class EnvironmentFactory(object):
 
         # TODO: ensure this directory exists? (and is git?)
         self.source_dir = source_dir
-        self.log = tsqa.utils.get_logger()
+        self.log = logging.getLogger(__name__)
         self.env_cache_dir = env_cache_dir  # base directory for environment caching
 
         if default_configure is not None:
@@ -187,7 +187,7 @@ class Layout:
 
     def __init__(self, prefix):
         self.prefix = prefix
-        self.log = tsqa.utils.get_logger()
+        self.log = logging.getLogger(__name__)
 
     def __getattr__(self, name):
         # Raise an error for suffixes we don't know about
@@ -252,7 +252,7 @@ class Environment:
         """
         Initialize a new Environment.
         """
-        self.log = tsqa.utils.get_logger()
+        self.log = logging.getLogger(__name__)
         self.cop = None
         self.hostports = []
         if layout:
@@ -329,6 +329,8 @@ class Environment:
         self.layout = Layout(None)
 
     def start(self):
+        if self.running():  # if its already running, don't start another one
+            raise Exception('traffic cop already started')
         self.log.debug("Starting traffic cop")
         assert(os.path.isfile(os.path.join(self.layout.sysconfdir, 'records.config')))
         self.__exec_cop()
@@ -343,6 +345,8 @@ class Environment:
             self.cop.terminate()  # TODO: remove?? or wait...
 
     def running(self):
+        if self.cop is None:
+            return False
         self.cop.poll()
         return self.cop is not None and self.cop.returncode is not None  # its running if it hasn't died
 

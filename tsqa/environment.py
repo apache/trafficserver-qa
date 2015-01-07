@@ -284,11 +284,16 @@ class Environment:
 
         # copy all files from old layout to new one
         for item in os.listdir(layout.prefix):
-            shutil.copytree(os.path.join(layout.prefix, item),
-                            os.path.join(self.layout.prefix, item),
-                            symlinks=True,
-                            ignore=None,
-                            )
+            src_path = os.path.join(layout.prefix, item)
+            dst_path = os.path.join(self.layout.prefix, item)
+            if os.path.isdir(src_path):
+                shutil.copytree(src_path,
+                                dst_path,
+                                symlinks=True,
+                                ignore=None,
+                                )
+            elif os.path.isfile(src_path):
+                shutil.copyfile(src_path, dst_path)
 
         # make sure that all suffixes in new layout exist
         for name in self.layout.suffixes:

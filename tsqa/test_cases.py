@@ -52,8 +52,6 @@ class EnvironmentCase(unittest.TestCase):
         # start ATS
         cls.environment.start()
 
-        cls._config_cache = {}
-
     @classmethod
     def getEnv(cls):
         '''

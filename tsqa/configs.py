@@ -1,3 +1,5 @@
+# TODO: keep track of stat when it was loaded? So we don't clobber manual file changes...
+
 class Config(object):
     '''
     Class to represent a config file

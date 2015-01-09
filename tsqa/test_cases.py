@@ -11,15 +11,20 @@ unittest = tsqa.utils.import_unittest()
 
 import os
 
-# Example environment case
+# Base environment case
 class EnvironmentCase(unittest.TestCase):
     '''
-    This class will get an environment (which is unique) but won't start it
+    This class will get an environment (which is unique)
     '''
     # TODO: better naming??
     environment_factory = {'configure': None,
                            'env': None,
                            }
+
+    def run(self, result=None):
+        unittest.TestCase.run(self, result)
+        self.__successful &= result.result.wasSuccessful()
+
     @classmethod
     def setUpClass(cls):
         # call parent constructor
@@ -30,6 +35,7 @@ class EnvironmentCase(unittest.TestCase):
 
         # get an environment
         cls.environment = cls.getEnv()
+        logging.info('Environment prefix is {0}'.format(cls.environment.layout.prefix))
 
         cfg_dir = os.path.join(cls.environment.layout.prefix, 'etc', 'trafficserver')
 
@@ -52,6 +58,9 @@ class EnvironmentCase(unittest.TestCase):
         # start ATS
         cls.environment.start()
 
+        # we assume the tests passed
+        cls.__successful = True
+
     @classmethod
     def getEnv(cls):
         '''
@@ -73,15 +82,16 @@ class EnvironmentCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # TODO: some better checking that we didn't crash
-        if cls.environment.cop is not None and not cls.environment.running:
+        if not cls.environment.running:
             raise Exception('ATS died during the test run')
         # stop ATS
         cls.environment.stop()
 
         # call parent destructor
         super(EnvironmentCase, cls).tearDownClass()
-        cls.environment.destroy()  # this will tear down any processes that we started
+        # if the test was successful, tear down the env
+        if self.__successful:
+            cls.environment.destroy()  # this will tear down any processes that we started
 
     # Some helpful properties
     @property
@@ -91,6 +101,7 @@ class EnvironmentCase(unittest.TestCase):
         '''
         # TODO: create a better dict by parsing the config-- to handle http/https ports in the string
         return {'http': 'http://127.0.0.1:{0}'.format(self.configs['records.config']['CONFIG']['proxy.config.http.server_ports'])}
+
 
 class DynamicHTTPEndpointCase(unittest.TestCase):
     '''

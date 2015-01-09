@@ -59,3 +59,10 @@ server in a separate thread with APIs to register endpoints and track requests.
 test_cases
 ==========
 These are intended to be test cases that you would subclass to create your own test.
+
+
+Environment Variables
+=====================
+TSQA_LAYOUT_PREFIX: Prefix to create layouts for each test execution (defaults to /tmp)
+TSQA_LOG_LEVEL: Log level for TSQA (defaults to INFO)
+TSQA_TMP_DIR: temp directory for building of source (environment factory)

@@ -98,6 +98,11 @@ class DynamicHTTPEndpoint(threading.Thread):
             # return a 404 since we didn't find it
             return ('', 404)
 
+        # A little magic to make flask accept *all* methods on the catch_all path
+        for rule in self.app.url_map.iter_rules('hello'):
+            rule.methods = None
+            rule.refresh()
+
     def get_tracking_key(self):
         '''
         Return a new key for tracking a request by key

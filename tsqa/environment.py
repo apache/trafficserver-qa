@@ -355,10 +355,6 @@ class Environment:
         self.cop.poll()
         return self.cop.returncode is not None  # its running if it hasn't died
 
-    # TODO: only do this on success, instead of __del__?
-    def __del__(self):
-        self.destroy()
-
 
 if __name__ == '__main__':
     SOURCE_DIR = os.getenv('TSQA_SRC_DIR', '~/trafficserver')

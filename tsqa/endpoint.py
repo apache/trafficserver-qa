@@ -99,7 +99,7 @@ class DynamicHTTPEndpoint(threading.Thread):
             return ('', 404)
 
         # A little magic to make flask accept *all* methods on the catch_all path
-        for rule in self.app.url_map.iter_rules('hello'):
+        for rule in self.app.url_map.iter_rules():
             rule.methods = None
             rule.refresh()
 

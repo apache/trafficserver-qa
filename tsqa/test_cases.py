@@ -35,6 +35,7 @@ class EnvironmentCase(unittest.TestCase):
 
         # get an environment
         cls.environment = cls.getEnv()
+        # TODO: better... I dont think this output is captured in each test run
         logging.info('Environment prefix is {0}'.format(cls.environment.layout.prefix))
 
         cfg_dir = os.path.join(cls.environment.layout.prefix, 'etc', 'trafficserver')
@@ -82,7 +83,7 @@ class EnvironmentCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        if not cls.environment.running:
+        if not cls.environment.running():
             raise Exception('ATS died during the test run')
         # stop ATS
         cls.environment.stop()

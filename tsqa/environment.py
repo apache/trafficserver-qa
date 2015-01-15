@@ -353,7 +353,7 @@ class Environment:
         if self.cop is None:
             return False
         self.cop.poll()
-        return self.cop.returncode is not None  # its running if it hasn't died
+        return self.cop.returncode is None  # its running if it hasn't died
 
 
 if __name__ == '__main__':

@@ -199,7 +199,7 @@ class Layout:
         if self.prefix is None:
             return None
         # Yay, we have a path.
-        return os.path.join(self.prefix, Layout.suffixes[name])
+        return str(os.path.join(self.prefix, Layout.suffixes[name]))
 
     @classmethod
     def ParseFromLayout(self, path):
@@ -220,10 +220,8 @@ class Layout:
 
 
 class Environment:
-    def __exec_cop(self):
-        path = os.path.join(self.layout.bindir, 'traffic_cop')
-        cmd = [path, '--debug', '--stdout']
-
+    @property
+    def shell_env(self):
         environ = copy.copy(os.environ)
         environ['TS_ROOT'] = self.layout.prefix
 
@@ -231,10 +229,15 @@ class Environment:
             environ['LD_LIBRARY_PATH'] = self.layout.libdir + ':' + environ['LD_LIBRARY_PATH']
         else:
             environ['LD_LIBRARY_PATH'] = self.layout.libdir
+        return environ
+
+    def __exec_cop(self):
+        path = os.path.join(self.layout.bindir, 'traffic_cop')
+        cmd = [path, '--debug', '--stdout']
 
         with open(os.path.join(self.layout.logdir, 'cop.log'), 'w+') as logfile:
             self.cop = subprocess.Popen(cmd,
-                                        env=environ,
+                                        env=self.shell_env,
                                         stdout=logfile,
                                         stderr=logfile,
                                         )
@@ -288,12 +291,21 @@ class Environment:
         for item in os.listdir(layout.prefix):
             src_path = os.path.join(layout.prefix, item)
             dst_path = os.path.join(self.layout.prefix, item)
-            if os.path.isdir(src_path):
+            # if its the bindir, lets symlink in everything
+            if item == layout.suffixes['bindir']:
+                os.makedirs(dst_path)  # make the dest dir
+                for bin_item in os.listdir(src_path):
+                     os.symlink(os.path.join(src_path, bin_item),
+                                os.path.join(dst_path, bin_item),
+                                )
+
+            elif os.path.isdir(src_path):
                 shutil.copytree(src_path,
                                 dst_path,
                                 symlinks=True,
                                 ignore=None,
                                 )
+
             elif os.path.isfile(src_path):
                 shutil.copyfile(src_path, dst_path)
 
@@ -320,7 +332,7 @@ class Environment:
             'proxy.config.config_dir': self.layout.sysconfdir,
             'proxy.config.body_factory.template_sets_dir': os.path.join(self.layout.sysconfdir, 'body_factory'),
             'proxy.config.plugin.plugin_dir': self.layout.plugindir,
-            'proxy.config.bin_path': self.layout.bindir,  # TODO: symlink over the bins, instead of copying
+            'proxy.config.bin_path': self.layout.bindir,
             'proxy.config.log.logfile_dir': self.layout.logdir,
             'proxy.config.local_state_dir': self.layout.runtimedir,
             'proxy.config.http.server_ports': str(http_server_port),  # your own listen port
@@ -333,6 +345,17 @@ class Environment:
 
         os.chmod(os.path.join(os.path.dirname(self.layout.runtimedir)), 0777)
         os.chmod(os.path.join(self.layout.runtimedir), 0777)
+
+        # write out a conveinence script to
+        fd = os.open(os.path.join(self.layout.prefix, 'run'), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0755)
+        with os.fdopen(fd, 'w') as runscript:
+            runscript.write('#! /usr/bin/env sh\n\n')
+            runscript.write('# run PROGRAM [ARGS ...]\n')
+            runscript.write('# Run a Traffic Server program in this environment\n\n')
+            for k, v in self.shell_env.iteritems():
+                runscript.write('{0}="{1}"\n'.format(k, v))
+                runscript.write('export {0}\n\n'.format(k))
+            runscript.write('exec "$@"\n')
 
     def destroy(self):
         """

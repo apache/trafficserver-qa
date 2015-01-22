@@ -23,7 +23,7 @@ class EnvironmentCase(unittest.TestCase):
 
     def run(self, result=None):
         unittest.TestCase.run(self, result)
-        self.__successful &= result.wasSuccessful()
+        self.__successful &= result.result.wasSuccessful()
 
     @classmethod
     def setUpClass(cls):

@@ -46,7 +46,6 @@ class EnvironmentFactory(object):
         '''
         Autoreconf to make the configure script
         '''
-
         kwargs = {
             'cwd': self.source_dir,
             'env': self.default_env,
@@ -116,17 +115,14 @@ class EnvironmentFactory(object):
         else:
             env = tsqa.utils.merge_dicts(self.default_env, env)
 
-        # blacklist a few things from env, so as to de-dupe builds with diffs of
-        # only these keys
-        # TODO: only de-dupe for get_key?? for now we don't care since all of these
-        # have no effect on build, but if we add one that does we'll care
         # TODO: global?
-        for blacklisted_key in ('PWD', 'OLDPWD', 'LD_LIBRARY_PATH', 'TS_ROOT', '_'):
-            if blacklisted_key in env:
-                del env[blacklisted_key]
+        # TODO: other things that can change the build...
+        env_key = {}
+        for whitelisted_key in ('PATH',):
+            env_key[whitelisted_key] = env.get(whitelisted_key)
 
-        key = self._get_key(configure, env)
-        self.log.debug('Key is: %s, args are: %s %s' % (key, configure, env))
+        key = self._get_key(configure, env_key)
+        self.log.debug('Key is: %s, args are: %s %s' % (key, configure, env_key))
 
         # if we don't have it built already, lets build it
         if key not in self.environment_stash:
@@ -185,7 +181,9 @@ class Layout:
         'libdir': 'lib',
         'logdir': 'var/log',
         'plugindir': 'libexec/trafficserver',
-        'runtimedir': 'var/run',
+        'runtimedir': 'var/trafficserver',
+        # TODO: change back to var/run after fixing traffic_manager, who doesn't honor proxy.config.local_state_dir
+        #'runtimedir': 'var/run',
         'sysconfdir': 'etc/trafficserver',
     }
 
@@ -223,13 +221,8 @@ class Layout:
 
 class Environment:
     def __exec_cop(self):
-        # TODO: use traffic_cop/manager? Setuid and gid remove LD_LIBRARY_PATH
-        # so we can't use them for now
-        #path = os.path.join(self.layout.bindir, 'traffic_cop')
-        #cmd = [path, '--debug', '--stdout']
-
-        path = os.path.join(self.layout.bindir, 'traffic_server')
-        cmd = [path]
+        path = os.path.join(self.layout.bindir, 'traffic_cop')
+        cmd = [path, '--debug', '--stdout']
 
         environ = copy.copy(os.environ)
         environ['TS_ROOT'] = self.layout.prefix
@@ -245,7 +238,12 @@ class Environment:
                                         stdout=logfile,
                                         stderr=logfile,
                                         )
-            tsqa.utils.poll_interfaces(self.hostports)
+            # TODO: more specific exception?
+            try:
+                tsqa.utils.poll_interfaces(self.hostports)
+            except:
+                self.stop()  # make sure to stop the daemons
+                raise
 
             self.cop.poll()
             if self.cop.returncode is not None:
@@ -309,7 +307,12 @@ class Environment:
 
         http_server_port = tsqa.utils.bind_unused_port()[1]
         manager_mgmt_port = tsqa.utils.bind_unused_port()[1]
-        self.hostports = [('127.0.0.1', http_server_port), ('127.0.0.1', manager_mgmt_port)]
+        admin_port = tsqa.utils.bind_unused_port()[1]
+
+        self.hostports = [('127.0.0.1', http_server_port),
+                          #('127.0.0.1', manager_mgmt_port),  # TODO: fix this
+                          ('127.0.0.1', admin_port),
+                          ]
 
         # overwrite a few things that need to be changed to have a unique env
         records = tsqa.configs.RecordsConfig(os.path.join(self.layout.sysconfdir, 'records.config'))
@@ -317,11 +320,14 @@ class Environment:
             'proxy.config.config_dir': self.layout.sysconfdir,
             'proxy.config.body_factory.template_sets_dir': os.path.join(self.layout.sysconfdir, 'body_factory'),
             'proxy.config.plugin.plugin_dir': self.layout.plugindir,
-            'proxy.config.bin_path': self.layout.bindir,
+            'proxy.config.bin_path': self.layout.bindir,  # TODO: symlink over the bins, instead of copying
             'proxy.config.log.logfile_dir': self.layout.logdir,
             'proxy.config.local_state_dir': self.layout.runtimedir,
             'proxy.config.http.server_ports': str(http_server_port),  # your own listen port
             'proxy.config.process_manager.mgmt_port': manager_mgmt_port,  # your own listen port
+            'proxy.config.admin.autoconf_port': admin_port,
+            'proxy.config.diags.show_location': 1,
+            'proxy.config.admin.user_id': '#-1',
         })
         records.write()
 

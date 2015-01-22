@@ -4,7 +4,8 @@ import os
 import threading
 import requests
 import flask
-
+import SocketServer
+import ssl
 
 from collections import defaultdict
 from wsgiref.simple_server import make_server
@@ -152,4 +153,88 @@ class DynamicHTTPEndpoint(threading.Thread):
         # mark it as ready
         self.ready.set()
         # serve it
+        self.server.serve_forever()
+
+
+class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    pass
+
+
+class SocketServerDaemon(threading.Thread):
+    '''
+    A daemon thread to run a socketserver
+    '''
+    def __init__(self, handler, port=0):
+        threading.Thread.__init__(self)
+        self.port = port
+        self.handler = handler
+        self.ready = threading.Event()
+        self.daemon = True
+
+    def run(self):
+        self.server = ThreadedTCPServer(('0.0.0.0', self.port), self.handler)
+        self.server.allow_reuse_address = True
+        self.port = self.server.socket.getsockname()[1]
+
+        self.ready.set()
+
+        # Activate the server; this will keep running until you
+        # interrupt the program with Ctrl-C
+        self.server.serve_forever()
+
+
+class ThreadedSSLTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    def __init__(self,
+                 server_address,
+                 RequestHandlerClass,
+                 certfile,
+                 keyfile,
+                 ssl_version=ssl.PROTOCOL_TLSv1,
+                 bind_and_activate=True):
+        SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate)
+        self.certfile = certfile
+        self.keyfile = keyfile
+        self.ssl_version = ssl_version
+
+    def get_request(self):
+        newsocket, fromaddr = self.socket.accept()
+        connstream = ssl.wrap_socket(newsocket,
+                                     server_side=True,
+                                     certfile=self.certfile,
+                                     keyfile=self.keyfile,
+                                     ssl_version=self.ssl_version,
+                                     )
+        return connstream, fromaddr
+
+class SSLSocketServerDaemon(threading.Thread):
+    '''
+    A daemon thread to run a socketserver
+    '''
+    def __init__(self, handler, cert, key, port=0):
+        # TODO: nicer import?
+        import requests
+        requests.packages.urllib3.disable_warnings()
+
+        threading.Thread.__init__(self)
+        self.handler = handler
+        self.cert = cert
+        self.key = key
+        self.port = port
+
+        self.ready = threading.Event()
+        self.daemon = True
+
+    def run(self):
+        self.server = ThreadedSSLTCPServer(('0.0.0.0', self.port),
+                                           self.handler,
+                                           self.cert,
+                                           self.key,
+                                           )
+        self.server.allow_reuse_address = True
+        self.port = self.server.socket.getsockname()[1]
+
+        self.ready.set()
+
+        # Activate the server; this will keep running until you
+        # interrupt the program with Ctrl-C
         self.server.serve_forever()

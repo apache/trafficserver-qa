@@ -6,6 +6,7 @@ import subprocess
 import socket
 import time
 
+import tsqa.log
 import logging
 
 log = logging.getLogger(__name__)

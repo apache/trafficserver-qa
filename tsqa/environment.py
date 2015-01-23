@@ -31,7 +31,6 @@ class EnvironmentFactory(object):
 
         # TODO: ensure this directory exists? (and is git?)
         self.source_dir = source_dir
-        self.log = logging.getLogger(__name__)
         self.env_cache_dir = env_cache_dir  # base directory for environment caching
 
         if default_configure is not None:
@@ -55,7 +54,7 @@ class EnvironmentFactory(object):
             'stderr': subprocess.PIPE
         }
 
-        if self.log.isEnabledFor(logging.DEBUG):
+        if log.isEnabledFor(logging.DEBUG):
             kwargs['stdout'] = sys.stdout.fileno()
             kwargs['stderr'] = sys.stderr.fileno()
 
@@ -124,7 +123,7 @@ class EnvironmentFactory(object):
             env_key[whitelisted_key] = env.get(whitelisted_key)
 
         key = self._get_key(configure, env_key)
-        self.log.debug('Key is: %s, args are: %s %s' % (key, configure, env_key))
+        log.debug('Key is: %s, args are: %s %s' % (key, configure, env_key))
 
         # if we don't have it built already, lets build it
         if key not in self.environment_stash:
@@ -138,7 +137,7 @@ class EnvironmentFactory(object):
                 'stderr': subprocess.PIPE
             }
 
-            if self.log.isEnabledFor(logging.DEBUG):
+            if log.isEnabledFor(logging.DEBUG):
                 kwargs['stdout'] = sys.stdout.fileno()
                 kwargs['stderr'] = sys.stderr.fileno()
 
@@ -191,7 +190,6 @@ class Layout:
 
     def __init__(self, prefix):
         self.prefix = prefix
-        self.log = logging.getLogger(__name__)
 
     def __getattr__(self, name):
         # Raise an error for suffixes we don't know about
@@ -262,7 +260,6 @@ class Environment:
         """
         Initialize a new Environment.
         """
-        self.log = logging.getLogger(__name__)
         self.cop = None
         # TODO: parse config? Don't like the separate hostports...
         self.hostports = []
@@ -378,15 +375,15 @@ class Environment:
     def start(self):
         if self.running():  # if its already running, don't start another one
             raise Exception('traffic cop already started')
-        self.log.debug("Starting traffic cop")
+        log.debug("Starting traffic cop")
         assert(os.path.isfile(os.path.join(self.layout.sysconfdir, 'records.config')))
         self.__exec_cop()
-        self.log.debug("Started traffic cop: %s", self.cop)
+        log.debug("Started traffic cop: %s", self.cop)
 
     # TODO: exception if already stopped?
     # TODO: more graceful stop?
     def stop(self):
-        self.log.debug("Killing traffic cop: %s", self.cop)
+        log.debug("Killing traffic cop: %s", self.cop)
         if self.cop is not None:
             self.cop.kill()
             self.cop.terminate()  # TODO: remove?? or wait...

@@ -385,11 +385,18 @@ class Environment:
         log.debug("Started traffic cop: %s", self.cop)
 
     # TODO: exception if already stopped?
-    # TODO: more graceful stop?
     def stop(self):
-        log.debug("Killing traffic cop: %s", self.cop)
-        if self.cop is not None:
+        log.debug("Stopping traffic cop: %s", self.cop)
+        if self.running():
             self.cop.kill()
+            # wait for a max of 2s
+            stoptime = time.time() + 2
+            while time.time() < stoptime:
+                # if we got a returncode, we exited
+                if self.cop.poll() is not None:
+                    return
+                time.sleep(0.1)
+            log.error('Unable to stop traffic_cop: {0}'.format(self.cop))
             self.cop.terminate()  # TODO: remove?? or wait...
 
     def running(self):

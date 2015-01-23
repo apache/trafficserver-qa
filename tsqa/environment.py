@@ -351,8 +351,7 @@ class Environment:
         os.chmod(os.path.join(self.layout.runtimedir), 0777)
 
         # write out a conveinence script to
-        fd = os.open(os.path.join(self.layout.prefix, 'run'), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0755)
-        with os.fdopen(fd, 'w') as runscript:
+        with open(os.path.join(self.layout.prefix, 'run'), 'w') as runscript:
             runscript.write('#! /usr/bin/env sh\n\n')
             runscript.write('# run PROGRAM [ARGS ...]\n')
             runscript.write('# Run a Traffic Server program in this environment\n\n')

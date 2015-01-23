@@ -322,7 +322,7 @@ class Environment:
         admin_port = tsqa.utils.bind_unused_port()[1]
 
         self.hostports = [('127.0.0.1', http_server_port),
-                          #('127.0.0.1', manager_mgmt_port),  # TODO: fix this
+                          ('127.0.0.1', manager_mgmt_port),
                           ('127.0.0.1', admin_port),
                           ]
 
@@ -340,6 +340,10 @@ class Environment:
             'proxy.config.admin.autoconf_port': admin_port,
             'proxy.config.diags.show_location': 1,
             'proxy.config.admin.user_id': '#-1',
+
+            # set the process_server timeouts to 0 (faster startup)
+            'proxy.config.lm.pserver_timeout_secs': 0,
+            'proxy.config.lm.pserver_timeout_msecs': 0,
         })
         records.write()
 

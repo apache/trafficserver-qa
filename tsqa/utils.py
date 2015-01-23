@@ -18,7 +18,7 @@ def poll_interfaces(hostports, **kwargs):
     '''
 
     connect_timeout_sec = 1
-    poll_sleep_sec = 1
+    poll_sleep_sec = 0.1
 
     if kwargs.has_key('timeout_sec'):
         timeout = time.time() + kwargs['timeout_sec']
@@ -35,9 +35,11 @@ def poll_interfaces(hostports, **kwargs):
             log.debug("Checking interface '%s:%d'", hostname, port)
 
             # This supports IPv6
-
             try:
-                s = socket.create_connection((hostname, port), timeout=connect_timeout_sec)
+                s = socket.create_connection((hostname, port),
+                                             timeout=connect_timeout_sec,
+                                             source_address=('127.0.0.1', 0),  # force the request to come from loopback
+                                             )
                 s.close()
                 hostports.remove(hostport)
 

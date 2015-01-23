@@ -108,12 +108,13 @@ class DynamicHTTPEndpointCase(unittest.TestCase):
     '''
     This class will set up a dynamic http endpoint that is local to this class
     '''
+    endpoint_port = 0
     @classmethod
-    def setUpClass(cls, port=0):
+    def setUpClass(cls):
         # get a logger
         cls.log = logging.getLogger(__name__)
 
-        cls.http_endpoint = tsqa.endpoint.DynamicHTTPEndpoint(port=port)
+        cls.http_endpoint = tsqa.endpoint.DynamicHTTPEndpoint(port=cls.endpoint_port)
         cls.http_endpoint.start()
 
         cls.http_endpoint.ready.wait()

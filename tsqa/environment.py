@@ -234,8 +234,11 @@ class Environment:
         return environ
 
     def __exec_cop(self):
-        path = os.path.join(self.layout.bindir, 'traffic_cop')
-        cmd = [path, '--debug', '--stdout']
+        # TODO: re-enable after jpeach's patch lands to fix proxy.config.admin.user_id
+        #path = os.path.join(self.layout.bindir, 'traffic_cop')
+        #cmd = [path, '--debug', '--stdout']
+
+        cmd = [os.path.join(self.layout.bindir, 'traffic_server')]
 
         with open(os.path.join(self.layout.logdir, 'cop.log'), 'w+') as logfile:
             self.cop = subprocess.Popen(cmd,
@@ -325,8 +328,9 @@ class Environment:
         admin_port = tsqa.utils.bind_unused_port()[1]
 
         self.hostports = [('127.0.0.1', http_server_port),
-                          ('127.0.0.1', manager_mgmt_port),
-                          ('127.0.0.1', admin_port),
+                          # TODO: re-enable after jpeach's patch lands to fix proxy.config.admin.user_id
+                          #('127.0.0.1', manager_mgmt_port),
+                          #('127.0.0.1', admin_port),
                           ]
 
         # overwrite a few things that need to be changed to have a unique env
@@ -342,7 +346,7 @@ class Environment:
             'proxy.config.process_manager.mgmt_port': manager_mgmt_port,  # your own listen port
             'proxy.config.admin.autoconf_port': admin_port,
             'proxy.config.diags.show_location': 1,
-            'proxy.config.admin.user_id': '#-1',
+            #'proxy.config.admin.user_id': '#-1',
 
             # set the process_server timeouts to 0 (faster startup)
             'proxy.config.lm.pserver_timeout_secs': 0,

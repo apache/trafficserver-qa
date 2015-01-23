@@ -38,7 +38,6 @@ def poll_interfaces(hostports, **kwargs):
             try:
                 s = socket.create_connection((hostname, port),
                                              timeout=connect_timeout_sec,
-                                             source_address=('127.0.0.1', 0),  # force the request to come from loopback
                                              )
                 s.close()
                 hostports.remove(hostport)

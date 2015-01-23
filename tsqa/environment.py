@@ -5,11 +5,13 @@ import copy
 import shutil
 import tsqa.utils
 import sys
+import time
 
 import tsqa.configs
 import tsqa.utils
 import logging
 
+log = logging.getLogger(__name__)
 
 class EnvironmentFactory(object):
     '''
@@ -243,12 +245,14 @@ class Environment:
                                         stdout=logfile,
                                         stderr=logfile,
                                         )
+            start = time.time()
             # TODO: more specific exception?
             try:
                 tsqa.utils.poll_interfaces(self.hostports)
             except:
                 self.stop()  # make sure to stop the daemons
                 raise
+            log.debug('traffic_cop took {0}s to start up'.format(time.time() - start))
 
             self.cop.poll()
             if self.cop.returncode is not None:

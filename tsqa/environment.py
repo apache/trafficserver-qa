@@ -210,8 +210,10 @@ class Layout:
         already have installed.
         """
         layout = Layout(None)
-        proc = subprocess.Popen(path, shell=False, stderr=open('/dev/null'), stdout=subprocess.PIPE)
-        stdout, _ = proc.communicate()
+        stdout, _ = tsqa.utils.run_sync_command(path,
+                                                shell=False,
+                                                stdout=subprocess.PIPE,
+                                                )
         for line in stdout.splitlines():
             key, val = line.split(': ', 1)
             setattr(layout, key.lower(), val)

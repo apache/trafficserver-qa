@@ -87,6 +87,11 @@ def run_sync_command(*args, **kwargs):
     '''
     Helper to run a command synchronously
     '''
+    if 'stdout' not in kwargs:
+        kwargs['stdout'] = open(os.devnull, 'w')
+    if 'stderr' not in kwargs:
+        kwargs['stderr'] = open(os.devnull, 'w')
+
     p = subprocess.Popen(*args, **kwargs)
     stdout, stderr = p.communicate()
     if p.returncode != 0:

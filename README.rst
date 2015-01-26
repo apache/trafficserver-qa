@@ -1,4 +1,3 @@
-# TODO: rename from tsqa?
 =============
 What is TSQA?
 =============
@@ -66,3 +65,9 @@ Environment Variables
 TSQA_LAYOUT_PREFIX: Prefix to create layouts for each test execution (defaults to /tmp)
 TSQA_LOG_LEVEL: Log level for TSQA (defaults to INFO)
 TSQA_TMP_DIR: temp directory for building of source (environment factory)
+
+
+====
+TODO
+====
+- abstract out "daemon" from environment. This will make it more generic (less ATS specific)and make it easy to wrap commands in other commands (such as valgrind)

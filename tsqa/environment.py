@@ -6,6 +6,7 @@ import shutil
 import tsqa.utils
 import sys
 import time
+import multiprocessing
 
 import tsqa.configs
 import tsqa.utils
@@ -146,7 +147,7 @@ class EnvironmentFactory(object):
             tsqa.utils.run_sync_command(args, **kwargs)
 
             # make
-            tsqa.utils.run_sync_command(['make', '-j'], **kwargs)
+            tsqa.utils.run_sync_command(['make', '-j{0}'.format(multiprocessing.cpu_count())], **kwargs)
             installdir = tempfile.mkdtemp(dir=self.env_cache_dir)
 
             # make install

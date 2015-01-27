@@ -330,9 +330,8 @@ class Environment:
         admin_port = tsqa.utils.bind_unused_port()[1]
 
         self.hostports = [('127.0.0.1', http_server_port),
-                          # TODO: re-enable after jpeach's patch lands to fix proxy.config.admin.user_id
-                          #('127.0.0.1', manager_mgmt_port),
-                          #('127.0.0.1', admin_port),
+                          ('127.0.0.1', manager_mgmt_port),
+                          ('127.0.0.1', admin_port),
                           ]
 
         # overwrite a few things that need to be changed to have a unique env

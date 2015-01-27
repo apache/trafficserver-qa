@@ -239,11 +239,8 @@ class Environment:
         return environ
 
     def __exec_cop(self):
-        # TODO: re-enable after jpeach's patch lands to fix proxy.config.admin.user_id
-        #path = os.path.join(self.layout.bindir, 'traffic_cop')
-        #cmd = [path, '--debug', '--stdout']
-
-        cmd = [os.path.join(self.layout.bindir, 'traffic_server')]
+        path = os.path.join(self.layout.bindir, 'traffic_cop')
+        cmd = [path, '--debug', '--stdout']
 
         with open(os.path.join(self.layout.logdir, 'cop.log'), 'w+') as logfile:
             self.cop = subprocess.Popen(cmd,
@@ -293,7 +290,7 @@ class Environment:
         """
         # First, make the prefix directory.
         if self.layout is None:
-            self.layout = Layout(tempfile.mkdtemp(prefix=os.environ.get('TSQA_LAYOUT_PREFIX', '')))
+            self.layout = Layout(tempfile.mkdtemp(prefix=os.environ.get('TSQA_LAYOUT_PREFIX', 'tsqa.env.')))
         else:
             os.makedirs(self.layout.prefix)
         os.chmod(self.layout.prefix, 0777)  # Make the tmp dir readable by all

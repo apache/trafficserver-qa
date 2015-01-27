@@ -348,7 +348,7 @@ class Environment:
             'proxy.config.process_manager.mgmt_port': manager_mgmt_port,  # your own listen port
             'proxy.config.admin.autoconf_port': admin_port,
             'proxy.config.diags.show_location': 1,
-            #'proxy.config.admin.user_id': '#-1',
+            'proxy.config.admin.user_id': '#-1',
 
             # set the process_server timeouts to 0 (faster startup)
             'proxy.config.lm.pserver_timeout_secs': 0,

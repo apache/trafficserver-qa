@@ -228,10 +228,14 @@ class Environment:
         environ = copy.copy(os.environ)
         environ['TS_ROOT'] = self.layout.prefix
 
-        if environ.has_key('LD_LIBRARY_PATH') and self.layout.libdir not in environ['LD_LIBRARY_PATH'].split(':'):
-            environ['LD_LIBRARY_PATH'] = self.layout.libdir + ':' + environ['LD_LIBRARY_PATH']
-        else:
-            environ['LD_LIBRARY_PATH'] = self.layout.libdir
+        for env_key in ('LD_LIBRARY_PATH',  # for *nix
+                        'DYLD_LIBRARY_PATH',  # for mac
+                        ):
+            if environ.has_key(env_key) and self.layout.libdir not in environ[env_key].split(':'):
+                environ[env_key] = self.layout.libdir + ':' + environ[env_key]
+            else:
+                environ[env_key] = self.layout.libdir
+
         return environ
 
     def __exec_cop(self):

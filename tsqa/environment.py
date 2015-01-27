@@ -347,8 +347,19 @@ class Environment:
             'proxy.config.http.server_ports': str(http_server_port),  # your own listen port
             'proxy.config.process_manager.mgmt_port': manager_mgmt_port,  # your own listen port
             'proxy.config.admin.autoconf_port': admin_port,
-            'proxy.config.diags.show_location': 1,
             'proxy.config.admin.user_id': '#-1',
+
+            # a bunch of debug options
+            'proxy.config.diags.show_location': 1,
+            'proxy.config.diags.output.diag': 'OL',
+            'proxy.config.diags.output.debug': 'OL',
+            'proxy.config.diags.output.status': 'OL',
+            'proxy.config.diags.output.note': 'OL',
+            'proxy.config.diags.output.warning': 'OL',
+            'proxy.config.diags.output.error': 'OL',
+            'proxy.config.diags.output.fatal': 'OL',
+            'proxy.config.diags.output.alert': 'OL',
+            'proxy.config.diags.output.emergency': 'OL',
 
             # set the process_server timeouts to 0 (faster startup)
             'proxy.config.lm.pserver_timeout_secs': 0,

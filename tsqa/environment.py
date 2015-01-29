@@ -21,6 +21,10 @@ class EnvironmentFactory(object):
     and will return copies of these in environments to callers
     '''
     class_environment_stash = None
+
+    # key -> exception
+    negative_cache = {}
+
     def __init__(self,
                  source_dir,
                  env_cache_dir,
@@ -128,34 +132,40 @@ class EnvironmentFactory(object):
 
         # if we don't have it built already, lets build it
         if key not in self.environment_stash:
-            self.autoreconf()
-            builddir = tempfile.mkdtemp()
+            if key in EnvironmentFactory.negative_cache:
+                raise EnvironmentFactory.negative_cache[key]
+            try:
+                self.autoreconf()
+                builddir = tempfile.mkdtemp()
 
-            kwargs = {
-                'cwd': builddir,
-                'env': env,
-                'stdout': subprocess.PIPE,
-                'stderr': subprocess.PIPE
-            }
+                kwargs = {
+                    'cwd': builddir,
+                    'env': env,
+                    'stdout': subprocess.PIPE,
+                    'stderr': subprocess.PIPE
+                }
 
-            if log.isEnabledFor(logging.DEBUG):
-                kwargs['stdout'] = sys.stdout.fileno()
-                kwargs['stderr'] = sys.stderr.fileno()
+                if log.isEnabledFor(logging.DEBUG):
+                    kwargs['stdout'] = sys.stdout.fileno()
+                    kwargs['stderr'] = sys.stderr.fileno()
 
-            # configure
-            args = [os.path.join(self.source_dir, 'configure'), '--prefix=/'] + tsqa.utils.configure_list(configure)
-            tsqa.utils.run_sync_command(args, **kwargs)
+                # configure
+                args = [os.path.join(self.source_dir, 'configure'), '--prefix=/'] + tsqa.utils.configure_list(configure)
+                tsqa.utils.run_sync_command(args, **kwargs)
 
-            # make
-            tsqa.utils.run_sync_command(['make', '-j{0}'.format(multiprocessing.cpu_count())], **kwargs)
-            installdir = tempfile.mkdtemp(dir=self.env_cache_dir)
+                # make
+                tsqa.utils.run_sync_command(['make', '-j{0}'.format(multiprocessing.cpu_count())], **kwargs)
+                installdir = tempfile.mkdtemp(dir=self.env_cache_dir)
 
-            # make install
-            tsqa.utils.run_sync_command(['make', 'install', 'DESTDIR={0}'.format(installdir)], **kwargs)
+                # make install
+                tsqa.utils.run_sync_command(['make', 'install', 'DESTDIR={0}'.format(installdir)], **kwargs)
 
-            shutil.rmtree(builddir)  # delete builddir, not useful after install
-            # stash the env
-            self.environment_stash[key] = installdir
+                shutil.rmtree(builddir)  # delete builddir, not useful after install
+                # stash the env
+                self.environment_stash[key] = installdir
+            except Exception as e:
+                EnvironmentFactory.negative_cache[key] = e
+                raise
 
         # create a layout
         layout = Layout(self.environment_stash[key])

@@ -14,6 +14,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 class EnvironmentFactory(object):
     '''
     Make builds of <SOURCE CODE> with optional env/configure flags

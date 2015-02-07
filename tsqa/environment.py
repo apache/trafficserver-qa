@@ -250,6 +250,14 @@ class Layout:
 
 
 class Environment:
+    '''
+    This is the core of tsqa. An environment is a directory (effectively a root dir)
+    with code and configs installed into it. This object is also responsible for
+    the daemon that will run out of this environment. All environments should be
+    sandboxed (seperate directories), and failures in one environment should not
+    cause failures in other environments.
+
+    '''
     @property
     def shell_env(self):
         environ = copy.copy(os.environ)

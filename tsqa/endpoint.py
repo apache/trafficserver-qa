@@ -14,8 +14,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# TODO: some request/response class to load the various libary's implementations and allow for comparison
-
 import os
 import threading
 import requests
@@ -30,7 +28,21 @@ from wsgiref.simple_server import make_server
 REQUESTS = defaultdict(dict)
 
 
+# TODO: some request/response class to load the various libary's implementations and allow for comparison
 class TrackingRequests():
+    '''
+    This class gives you a "requests" like object that will return a dict of:
+        - client_request
+        - client_response
+        - server_request
+        - server_response
+    assuming the request is going to the instance of DynamicHTTPEndpoint this object
+    was created with
+
+    In general this is useful for a proxy testing framework beause you commonly
+    need to check that the proxy (for example) added a header to the request
+    before the origin got it.
+    '''
     def __init__(self, endpoint):
         self.endpoint = endpoint
 
@@ -62,10 +74,44 @@ class TrackingRequests():
 
 
 class DynamicHTTPEndpoint(threading.Thread):
-    TRACKING_HEADER = '__cool_test_header__'
+    '''
+    A threaded webserver which allows you to dynamically add/remove handlers.
+    This is implemented using flask (http://flask.pocoo.org/) primarily because
+    it is very common and (almost more importantly) *very* picky about http
+    semantics.
+
+    To use this in a TestCase you simply need to create the thread:
+
+        # create the thread object
+        http_endpoint = tsqa.endpoint.DynamicHTTPEndpoint(port=cls.endpoint_port)
+        # start the thread
+        http_endpoint.start()
+        # wait for the webserver to listen
+        http_endpoint.ready.wait()
+
+    At this point the webserver is listening and returning 404 for all requests.
+    To register an endpoint you must (1) define a request-handler function and
+    (2) add that handler to the http_endpoint.
+
+    (1): To define a request handler you must create a function which takes a single
+    argument which is the Request wrapper (http://werkzeug.pocoo.org/docs/0.10/wrappers/#werkzeug.wrappers.Request).
+    Flask support a variety or return types (http://flask.pocoo.org/docs/0.10/quickstart/#about-responses),
+    for this example we will simply return "hello world"
+
+        def handler_func(request):
+            return "hello world"
+
+    (2): Now that we have a function, we can add it as a handler to a context path
+        http_endpoint.add_handler('/hello', handler_func)
+
+    '''
+    TRACKING_HEADER = '__cool_test_header__'  # TODO: better name?
 
     @property
     def address(self):
+        '''
+        Return a tuple of (ip, port) that this thread is listening on.
+        '''
         return (self.server.server_address, self.server.server_port)
 
     def __init__(self, port=0):
@@ -74,9 +120,7 @@ class DynamicHTTPEndpoint(threading.Thread):
         self.tracked_requests = {}
 
         self.daemon = True
-
         self.port = port
-
         self.ready = threading.Event()
 
         # dict of pathname (no starting /) -> function
@@ -225,10 +269,18 @@ class ThreadedSSLTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 class SSLSocketServerDaemon(threading.Thread):
     '''
     A daemon thread to run a socketserver
+
+    This is just a thread wrapper to https://docs.python.org/2/library/socketserver.html
     '''
     def __init__(self, handler, cert, key, port=0):
-        # TODO: nicer import?
-        import requests
+        '''
+        handler: instance of SocketServer.BaseRequestHandler
+            https://docs.python.org/2/library/socketserver.html#socketserver-tcpserver-example
+        cert: path to certificate file
+        key: path to key file
+        '''
+        # for testing it is *very* common to have self-signed certs, so we
+        # will disable warnings so we don't flood logs
         requests.packages.urllib3.disable_warnings()
 
         threading.Thread.__init__(self)
@@ -248,9 +300,6 @@ class SSLSocketServerDaemon(threading.Thread):
                                            )
         self.server.allow_reuse_address = True
         self.port = self.server.socket.getsockname()[1]
-
         self.ready.set()
 
-        # Activate the server; this will keep running until you
-        # interrupt the program with Ctrl-C
         self.server.serve_forever()

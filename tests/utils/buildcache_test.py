@@ -24,11 +24,11 @@ class TestBuildCache(unittest.TestCase):
 
     def test_base(self):
         cache = tsqa.utils.BuildCache(self.tmp_dir)
-        assert cache == {}
+        self.assertEqual(cache, {})
         cache.save_cache()
-        assert os.path.exists(self.cache_map_file)
+        self.assertTrue(os.path.exists(self.cache_map_file))
         cache.load_cache()
-        assert cache == {}
+        self.assertEqual(cache, {})
 
     def test_load_cache(self):
         # make sure that a bad cache file gets emptied
@@ -36,7 +36,7 @@ class TestBuildCache(unittest.TestCase):
             fh.write(json.dumps({'foo': {}}))
 
         cache = tsqa.utils.BuildCache(self.tmp_dir)
-        assert cache == {}
+        self.assertEqual(cache, {})
 
     def test_save_cache(self):
         cache = tsqa.utils.BuildCache(self.tmp_dir)
@@ -44,7 +44,7 @@ class TestBuildCache(unittest.TestCase):
 
         with open(self.cache_map_file) as fh:
             json_cache = json.load(fh)
-        assert json_cache == {'foo': {'a': 'somepath'}}
+        self.assertEqual(json_cache, {'foo': {'a': 'somepath'}})
 
 
 

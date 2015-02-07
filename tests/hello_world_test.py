@@ -8,6 +8,8 @@ This should:
     - send a request through
     - check that it worked
 '''
+import helpers
+
 import tsqa.utils
 unittest = tsqa.utils.import_unittest()
 import tsqa.test_cases
@@ -16,7 +18,7 @@ import tsqa.environment
 import requests
 import time
 
-class TestEnvironmentCase(tsqa.test_cases.EnvironmentCase):
+class TestEnvironmentCase(helpers.EnvironmentCase):
     def test_base(self):
         assert isinstance(self.environment, tsqa.environment.Environment)
 

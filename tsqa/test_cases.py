@@ -31,7 +31,12 @@ import os
 # Base environment case
 class EnvironmentCase(unittest.TestCase):
     '''
-    This class will get an environment (which is unique)
+    This class will:
+        - get a unique environment (using getEnv())
+        - create wrappers for ATS configs available in self.configs
+        - setup the environment (setUpEnv())
+        - write out the configs
+        - start the environment (environment.start())
     '''
     # TODO: better naming??
     environment_factory = {'configure': None,

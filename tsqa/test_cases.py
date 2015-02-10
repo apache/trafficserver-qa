@@ -1,6 +1,23 @@
 '''
 Some base test cases that do environment handling for you
 '''
+#  Licensed to the Apache Software Foundation (ASF) under one
+#  or more contributor license agreements.  See the NOTICE file
+#  distributed with this work for additional information
+#  regarding copyright ownership.  The ASF licenses this file
+#  to you under the Apache License, Version 2.0 (the
+#  "License"); you may not use this file except in compliance
+#  with the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+
 import logging
 
 import tsqa.endpoint
@@ -14,7 +31,12 @@ import os
 # Base environment case
 class EnvironmentCase(unittest.TestCase):
     '''
-    This class will get an environment (which is unique)
+    This class will:
+        - get a unique environment (using getEnv())
+        - create wrappers for ATS configs available in self.configs
+        - setup the environment (setUpEnv())
+        - write out the configs
+        - start the environment (environment.start())
     '''
     # TODO: better naming??
     environment_factory = {'configure': None,

@@ -1,3 +1,7 @@
+'''
+Examples of how to skip tests
+    More examples: https://docs.python.org/2/library/unittest.html#unittest-skipping
+'''
 #  Licensed to the Apache Software Foundation (ASF) under one
 #  or more contributor license agreements.  See the NOTICE file
 #  distributed with this work for additional information
@@ -14,5 +18,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# initialize logger
-import tsqa.log
+
+class SkipEntireClass(helpers.EnvironmentCase):
+    @classmethod
+    def setUpClass(cls):
+        '''
+        If you'd like to skip an entire test
+        '''
+        # If you raise SkipTest in setUpClass (or within a test case) the test
+        # will be skipped. You can build logic around this to conditionally
+        # skip tests based on environment conditions.
+        raise unittest.SkipTest('Skip the entire class')
+
+
+class SkipSingleTestCase(helpers.EnvironmentCase):
+   @unittest.skip('Always skip this test with this message')
+   def test_example(self):
+        self.assertTrue(False)
+

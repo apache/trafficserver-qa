@@ -23,6 +23,7 @@ import tsqa.utils
 import sys
 import time
 import multiprocessing
+import hashlib
 
 import tsqa.configs
 import tsqa.utils
@@ -116,13 +117,12 @@ class EnvironmentFactory(object):
         Take list of dicts and make a nice tuple list to use as a key
         take that and then hash it
         '''
-        key = []
+        hval = hashlib.md5()
         for arg in args:
-            sub_key = []
             for k in sorted(arg):
-                sub_key.append((k, arg[k]))
-            key.append(tuple(sub_key))
-        return str(hash(tuple(key)))  # return a string since JSON doesn't like ints as keys
+                hval.update(k)
+                hval.update(str(arg[k]))
+        return hval.hexdigest()
 
     def get_environment(self, configure=None, env=None):
         '''

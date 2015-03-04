@@ -188,15 +188,16 @@ class BuildCache(MutableMapping):
         try:
             with open(self.cache_map_file) as fh:
                 cache = json.load(fh)
-        except IOError:
+        except IOError, ValueError:
+            # Just bail if the file is not there, is empty, or does not parse.
             return
 
         changed = False  # whether we changed the cache file, and need to write it out
         # verify that all of those directories exist, clean them out if they don't
         for source_hash, env_map in cache.items():
             # if the directory doesn't exist
-            for key, path in env_map.items():
-                if not os.path.isdir(path):
+            for key, entry in env_map.items():
+                if not os.path.isdir(entry['path']):
                     del cache[source_hash][key]
                     changed = True
             # if the source_hash level key is now empty

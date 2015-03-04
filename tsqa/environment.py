@@ -179,13 +179,16 @@ class EnvironmentFactory(object):
 
                 shutil.rmtree(builddir)  # delete builddir, not useful after install
                 # stash the env
-                self.environment_stash[key] = installdir
+                self.environment_stash[key] = {
+                        'path': installdir,
+                        'configuration': args
+                }
             except Exception as e:
                 EnvironmentFactory.negative_cache[key] = e
                 raise
 
         # create a layout
-        layout = Layout(self.environment_stash[key])
+        layout = Layout(self.environment_stash[key]['path'])
 
         # return an environment cloned from that layout
         ret = Environment()

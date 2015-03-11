@@ -17,9 +17,23 @@
 import logging
 import os
 
-logging.root.setLevel(os.environ.get('TSQA_LOG_LEVEL', logging.INFO))
+levels = {
+    'CRITICAL': logging.CRITICAL,
+    'ERROR': logging.ERROR,
+    'WARNING': logging.WARNING,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG}
+
+level = os.environ.get('TSQA_LOG_LEVEL', 'INFO')
+try:
+    level = levels[os.environ.get('TSQA_LOG_LEVEL', 'INFO')]
+except KeyError:
+    logging.error('Unkown log level: %s in environment variable TSQA_LOG_LEVEL', os.environ.get('TSQA_LOG_LEVEL'))
+    level = logging.INFO
+
+logging.root.setLevel(level)
 handler = logging.StreamHandler()
-handler.setLevel(os.environ.get('TSQA_LOG_LEVEL', logging.INFO))
+handler.setLevel(level)
 handler.setFormatter(logging.Formatter("%(levelname)s %(asctime)-15s - %(message)s"))
 logging.root.addHandler(handler)
 

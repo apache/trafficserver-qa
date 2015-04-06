@@ -76,7 +76,7 @@ class EnvironmentCase(unittest.TestCase):
         # call env setup, so people can change configs etc
         cls.setUpEnv(cls.environment)
 
-        for _, cfg in cls.configs.iteritems():
+        for cfg in cls.configs.itervalues():
             cfg.write()
 
         # start ATS

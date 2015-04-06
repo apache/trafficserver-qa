@@ -17,7 +17,14 @@
 import logging
 import os
 
-logging.root.setLevel(os.environ.get('TSQA_LOG_LEVEL', logging.INFO))
+if 'TSQA_LOG_LEVEL' in os.environ:
+    lvl_str = os.environ['TSQA_LOG_LEVEL']
+    if not lvl_str.isupper():
+        raise Exception('Log levels must be all capitals')
+
+    logging.root.setLevel(getattr(logging, lvl_str))
+else:
+    logging.root.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setLevel(os.environ.get('TSQA_LOG_LEVEL', logging.INFO))
 handler.setFormatter(logging.Formatter("%(levelname)s %(asctime)-15s - %(message)s"))

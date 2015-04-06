@@ -196,7 +196,7 @@ class EnvironmentFactory(object):
         return ret
 
 
-class Layout:
+class Layout(object):
     """
     The Layout class is responsible for the set of installation paths within a
     prefixed Traffic Server instance.
@@ -252,7 +252,7 @@ class Layout:
         return layout
 
 
-class Environment:
+class Environment(object):
     '''
     This is the core of tsqa. An environment is a directory (effectively a root dir)
     with code and configs installed into it. This object is also responsible for

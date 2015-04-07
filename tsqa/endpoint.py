@@ -216,6 +216,84 @@ class DynamicHTTPEndpoint(threading.Thread):
         self.server.serve_forever()
 
 
+class TrackingWSGIServer(threading.Thread):
+    '''
+    A threaded webserver which will wrap any wsgi app and track request/response
+    headers to the origin
+
+        # create the thread object
+        http_endpoint = tsqa.endpoint.TrackingWSGIServer(app)
+        # start the thread
+        http_endpoint.start()
+        # wait for the webserver to listen
+        http_endpoint.ready.wait()
+    '''
+    TRACKING_HEADER = '__cool_test_header__'  # TODO: better name?
+
+    @property
+    def address(self):
+        '''
+        Return a tuple of (ip, port) that this thread is listening on.
+        '''
+        return (self.server.server_address, self.server.server_port)
+
+    def __init__(self, app, port=0):
+        threading.Thread.__init__(self)
+        # dict to store request data in
+        self.tracked_requests = {}
+
+        self.daemon = True
+        self.port = port
+        self.ready = threading.Event()
+
+        self.app = app
+        self.app.debug = True
+
+        @self.app.before_request
+        def save_request():
+            '''
+            If the tracking header is set, save the request
+            '''
+            if flask.request.headers.get(self.TRACKING_HEADER):
+                self.tracked_requests[flask.request.headers[self.TRACKING_HEADER]] = {'request': request.copy()}
+
+
+        @self.app.after_request
+        def save_response(response):
+            '''
+            If the tracking header is set, save the response
+            '''
+            if flask.request.headers.get(self.TRACKING_HEADER):
+                self.tracked_requests[flask.request.headers[self.TRACKING_HEADER]]['response'] = response
+
+            return response
+
+    def get_tracking_key(self):
+        '''
+        Return a new key for tracking a request by key
+        '''
+        key = str(len(self.tracked_requests))
+        self.tracked_requests[key] = {}
+        return key
+
+    def get_tracking_by_key(self, key):
+        '''
+        Return tracking data by key
+        '''
+        if key not in self.tracked_requests:
+            raise Exception()
+        return self.tracked_requests[key]
+
+    def run(self):
+        self.server = make_server('',
+                                  self.port,
+                                  self.app.wsgi_app)
+        # mark it as ready
+        self.ready.set()
+        # serve it
+        self.server.serve_forever()
+
+
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     pass
 

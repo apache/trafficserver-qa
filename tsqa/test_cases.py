@@ -17,8 +17,10 @@ Some base test cases that do environment handling for you
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-
 import logging
+import os
+
+import httpbin
 
 import tsqa.endpoint
 import tsqa.environment
@@ -26,7 +28,7 @@ import tsqa.configs
 import tsqa.utils
 unittest = tsqa.utils.import_unittest()
 
-import os
+
 
 # Base environment case
 class EnvironmentCase(unittest.TestCase):
@@ -148,6 +150,37 @@ class DynamicHTTPEndpointCase(unittest.TestCase):
         # Do this last, so we can get our stuff registered
         # call parent constructor
         super(DynamicHTTPEndpointCase, cls).setUpClass()
+
+    def endpoint_url(self, path=''):
+        '''
+        Get the url for the local dynamic endpoint given a path
+        '''
+        if path and not path.startswith('/'):
+            path = '/' + path
+        return 'http://127.0.0.1:{0}{1}'.format(self.http_endpoint.address[1],
+                                                path)
+
+
+class HTTPBinCase(unittest.TestCase):
+    '''
+    This class will set up httpbin which is local to this class
+    '''
+    @classmethod
+    def setUpClass(cls):
+        # get a logger
+        cls.log = logging.getLogger(__name__)
+
+        cls.http_endpoint = tsqa.endpoint.TrackingWSGIServer(httpbin.app)
+        cls.http_endpoint.start()
+
+        cls.http_endpoint.ready.wait()
+
+        # create local requester object
+        cls.track_requests = tsqa.endpoint.TrackingRequests(cls.http_endpoint)
+
+        # Do this last, so we can get our stuff registered
+        # call parent constructor
+        super(HTTPBinCase, cls).setUpClass()
 
     def endpoint_url(self, path=''):
         '''

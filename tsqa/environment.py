@@ -220,6 +220,8 @@ class Layout(object):
     }
 
     def __init__(self, prefix):
+        if prefix is not None:
+            prefix = os.path.abspath(prefix)
         self.prefix = prefix
 
     def __getattr__(self, name):

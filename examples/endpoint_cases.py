@@ -16,6 +16,8 @@ Examples of how to use DynamicHTTPEndpointCase
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import tsqa.test_cases
+import requests
 
 
 class TestDynamicHTTPEndpointCase(tsqa.test_cases.DynamicHTTPEndpointCase):
@@ -39,7 +41,7 @@ class TestDynamicHTTPEndpointCase(tsqa.test_cases.DynamicHTTPEndpointCase):
 
         self.assertEqual(self.endpoint_url('/foo'), 'http://127.0.0.1:{0}/foo'.format(self.http_endpoint.address[1]))
 
-    def test_with_endpoint():
+    def test_with_endpoint(self):
         '''
         You can register custom handlers to the http_endpoint
         '''

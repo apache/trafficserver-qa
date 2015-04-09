@@ -16,6 +16,8 @@ Examples of how to use EnvironmentCase
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+import tsqa.test_cases
+import requests
 
 
 class HelloWorld(tsqa.test_cases.EnvironmentCase):

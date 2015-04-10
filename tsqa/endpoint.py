@@ -124,7 +124,7 @@ class DynamicHTTPEndpoint(threading.Thread):
         self.ready = threading.Event()
 
         # dict of pathname (no starting /) -> function
-        self.handlers = {}
+        self._handlers = {}
 
         self.app = flask.Flask(__name__)
         self.app.debug = True
@@ -136,8 +136,7 @@ class DynamicHTTPEndpoint(threading.Thread):
             If the tracking header is set, save the request
             '''
             if flask.request.headers.get(self.TRACKING_HEADER):
-                self._tracked_requests[flask.request.headers[self.TRACKING_HEADER]] = {'request': request.copy()}
-
+                self._tracked_requests[flask.request.headers[self.TRACKING_HEADER]] = {'request': flask.request}
 
         @self.app.after_request
         def save_response(response):
@@ -153,8 +152,8 @@ class DynamicHTTPEndpoint(threading.Thread):
         @self.app.route('/<path:path>')
         def catch_all(path=''):
             # get path key
-            if path in self.handlers:
-                return self.handlers[path](flask.request)
+            if path in self._handlers:
+                return self._handlers[path](flask.request)
 
             # return a 404 since we didn't find it
             return ('', 404)
@@ -193,18 +192,24 @@ class DynamicHTTPEndpoint(threading.Thread):
         Add a new handler attached to a specific path
         '''
         path = self.normalize_path(path)
-        if path in self.handlers:
+        if path in self._handlers:
             raise Exception()
-        self.handlers[path] = func
+        self._handlers[path] = func
 
     def remove_handler(self, path):
         '''
         remove a handler attached to a specific path
         '''
         path = self.normalize_path(path)
-        if path not in self.handlers:
+        if path not in self._handlers:
             raise Exception()
-        del self.handlers[path]
+        del self._handlers[path]
+
+    def clear_handlers(self):
+        '''
+        Clear all handlers that have been registered
+        '''
+        self._handlers = {}
 
     def url(self, path=''):
         '''

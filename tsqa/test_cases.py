@@ -144,9 +144,6 @@ class DynamicHTTPEndpointCase(unittest.TestCase):
 
         cls.http_endpoint.ready.wait()
 
-        # create local requester object
-        cls.track_requests = tsqa.endpoint.TrackingRequests(cls.http_endpoint)
-
         # Do this last, so we can get our stuff registered
         # call parent constructor
         super(DynamicHTTPEndpointCase, cls).setUpClass()
@@ -155,10 +152,7 @@ class DynamicHTTPEndpointCase(unittest.TestCase):
         '''
         Get the url for the local dynamic endpoint given a path
         '''
-        if path and not path.startswith('/'):
-            path = '/' + path
-        return 'http://127.0.0.1:{0}{1}'.format(self.http_endpoint.address[1],
-                                                path)
+        return self.http_endpoint.url(path)
 
 
 class HTTPBinCase(unittest.TestCase):

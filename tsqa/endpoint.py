@@ -117,7 +117,7 @@ class DynamicHTTPEndpoint(threading.Thread):
     def __init__(self, port=0):
         threading.Thread.__init__(self)
         # dict to store request data in
-        self.tracked_requests = {}
+        self._tracked_requests = {}
 
         self.daemon = True
         self.port = port
@@ -136,7 +136,7 @@ class DynamicHTTPEndpoint(threading.Thread):
             If the tracking header is set, save the request
             '''
             if flask.request.headers.get(self.TRACKING_HEADER):
-                self.tracked_requests[flask.request.headers[self.TRACKING_HEADER]] = {'request': request.copy()}
+                self._tracked_requests[flask.request.headers[self.TRACKING_HEADER]] = {'request': request.copy()}
 
 
         @self.app.after_request
@@ -145,7 +145,7 @@ class DynamicHTTPEndpoint(threading.Thread):
             If the tracking header is set, save the response
             '''
             if flask.request.headers.get(self.TRACKING_HEADER):
-                self.tracked_requests[flask.request.headers[self.TRACKING_HEADER]]['response'] = response
+                self._tracked_requests[flask.request.headers[self.TRACKING_HEADER]]['response'] = response
 
             return response
 
@@ -168,17 +168,17 @@ class DynamicHTTPEndpoint(threading.Thread):
         '''
         Return a new key for tracking a request by key
         '''
-        key = str(len(self.tracked_requests))
-        self.tracked_requests[key] = {}
+        key = str(len(self._tracked_requests))
+        self._tracked_requests[key] = {}
         return key
 
     def get_tracking_by_key(self, key):
         '''
         Return tracking data by key
         '''
-        if key not in self.tracked_requests:
+        if key not in self._tracked_requests:
             raise Exception()
-        return self.tracked_requests[key]
+        return self._tracked_requests[key]
 
     def normalize_path(self, path):
         '''
@@ -205,6 +205,14 @@ class DynamicHTTPEndpoint(threading.Thread):
         if path not in self.handlers:
             raise Exception()
         del self.handlers[path]
+
+    def url(self, path=''):
+        '''
+        Get the url for the given path in this endpoint
+        '''
+        if path and not path.startswith('/'):
+            path = '/' + path
+        return 'http://127.0.0.1:{0}{1}'.format(self.address[1], path)
 
     def run(self):
         self.server = make_server('',
@@ -240,7 +248,7 @@ class TrackingWSGIServer(threading.Thread):
     def __init__(self, app, port=0):
         threading.Thread.__init__(self)
         # dict to store request data in
-        self.tracked_requests = {}
+        self._tracked_requests = {}
 
         self.daemon = True
         self.port = port
@@ -255,7 +263,7 @@ class TrackingWSGIServer(threading.Thread):
             If the tracking header is set, save the request
             '''
             if flask.request.headers.get(self.TRACKING_HEADER):
-                self.tracked_requests[flask.request.headers[self.TRACKING_HEADER]] = {'request': request.copy()}
+                self._tracked_requests[flask.request.headers[self.TRACKING_HEADER]] = {'request': request.copy()}
 
 
         @self.app.after_request
@@ -264,7 +272,7 @@ class TrackingWSGIServer(threading.Thread):
             If the tracking header is set, save the response
             '''
             if flask.request.headers.get(self.TRACKING_HEADER):
-                self.tracked_requests[flask.request.headers[self.TRACKING_HEADER]]['response'] = response
+                self._tracked_requests[flask.request.headers[self.TRACKING_HEADER]]['response'] = response
 
             return response
 
@@ -272,17 +280,17 @@ class TrackingWSGIServer(threading.Thread):
         '''
         Return a new key for tracking a request by key
         '''
-        key = str(len(self.tracked_requests))
-        self.tracked_requests[key] = {}
+        key = str(len(self._tracked_requests))
+        self._tracked_requests[key] = {}
         return key
 
     def get_tracking_by_key(self, key):
         '''
         Return tracking data by key
         '''
-        if key not in self.tracked_requests:
+        if key not in self._tracked_requests:
             raise Exception()
-        return self.tracked_requests[key]
+        return self._tracked_requests[key]
 
     def run(self):
         self.server = make_server('',

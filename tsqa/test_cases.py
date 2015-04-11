@@ -19,6 +19,7 @@ Some base test cases that do environment handling for you
 
 import logging
 import os
+import warnings
 
 import httpbin
 
@@ -180,6 +181,8 @@ class HTTPBinCase(unittest.TestCase):
         '''
         Get the url for the local dynamic endpoint given a path
         '''
+        warnings.warn(('"endpoint_url" has been deprecated. The same function is '
+                       'available under "http_endpoint.url"'))
         if path and not path.startswith('/'):
             path = '/' + path
         return 'http://127.0.0.1:{0}{1}'.format(self.http_endpoint.address[1],

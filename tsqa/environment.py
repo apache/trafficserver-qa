@@ -78,8 +78,10 @@ class EnvironmentFactory(object):
         }
 
         if log.isEnabledFor(logging.DEBUG):
-            kwargs['stdout'] = sys.stdout.fileno()
-            kwargs['stderr'] = sys.stderr.fileno()
+            # if this is debug, lets not capture the output and let it go to
+            # stdout and stderr
+            kwargs['stdout'] = None
+            kwargs['stderr'] = None
 
         # run autoreconf in source tree
         try:

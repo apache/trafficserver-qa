@@ -160,8 +160,11 @@ class EnvironmentFactory(object):
                 }
 
                 if log.isEnabledFor(logging.DEBUG):
-                    kwargs.pop('stdout')
-                    kwargs.pop('stderr')
+                    # if this is debug, lets not capture the output and let it go to
+                    # stdout and stderr
+                    kwargs['stdout'] = None
+                    kwargs['stderr'] = None
+                log.info('Starting build ({0}): configure {1}'.format(key, configure))
 
                 # configure
                 args = [os.path.join(self.source_dir, 'configure'), '--prefix=/'] + tsqa.utils.configure_list(configure)
@@ -181,6 +184,7 @@ class EnvironmentFactory(object):
                         'configuration': args,
                         'env': env_key,
                 }
+                log.info('Build completed ({0}): configure {1}'.format(key, configure))
             except Exception as e:
                 EnvironmentFactory.negative_cache[key] = e
                 raise

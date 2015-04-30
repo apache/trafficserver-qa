@@ -83,11 +83,6 @@ class EnvironmentFactory(object):
             kwargs['stdout'] = None
             kwargs['stderr'] = None
 
-        # run autoreconf in source tree
-        try:
-            tsqa.utils.run_sync_command(['make', 'distclean'], **kwargs)
-        except:
-            pass
         tsqa.utils.run_sync_command(['autoreconf', '-if'], **kwargs)
 
     @property

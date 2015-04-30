@@ -160,8 +160,8 @@ class EnvironmentFactory(object):
                 }
 
                 if log.isEnabledFor(logging.DEBUG):
-                    kwargs['stdout'] = sys.stdout.fileno()
-                    kwargs['stderr'] = sys.stderr.fileno()
+                    kwargs.pop('stdout')
+                    kwargs.pop('stderr')
 
                 # configure
                 args = [os.path.join(self.source_dir, 'configure'), '--prefix=/'] + tsqa.utils.configure_list(configure)
@@ -178,7 +178,8 @@ class EnvironmentFactory(object):
                 # stash the env
                 self.environment_stash[key] = {
                         'path': installdir,
-                        'configuration': args
+                        'configuration': args,
+                        'env': env_key,
                 }
             except Exception as e:
                 EnvironmentFactory.negative_cache[key] = e

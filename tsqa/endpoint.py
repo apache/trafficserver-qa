@@ -18,6 +18,7 @@ import os
 import threading
 import requests
 import flask
+import socket
 import SocketServer
 import ssl
 
@@ -223,6 +224,8 @@ class DynamicHTTPEndpoint(threading.Thread):
         self.server = make_server('',
                                   self.port,
                                   self.app.wsgi_app)
+        # mark the socket as SO_REUSEADDR
+        self.server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # mark it as ready
         self.ready.set()
         # serve it

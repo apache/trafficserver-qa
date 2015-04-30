@@ -332,7 +332,8 @@ class Environment(object):
         """
         # First, make the prefix directory.
         if self.layout is None:
-            self.layout = Layout(tempfile.mkdtemp(prefix=os.environ.get('TSQA_LAYOUT_PREFIX', 'tsqa.env.')))
+            self.layout = Layout(tempfile.mkdtemp(prefix=os.environ.get('TSQA_LAYOUT_PREFIX', 'tsqa.env.'),
+                                                  dir=os.environ.get('TSQA_LAYOUR_DIR', None)))
         else:
             os.makedirs(self.layout.prefix)
         os.chmod(self.layout.prefix, 0777)  # Make the tmp dir readable by all

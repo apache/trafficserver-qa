@@ -261,7 +261,7 @@ class Environment(object):
     This is the core of tsqa. An environment is a directory (effectively a root dir)
     with code and configs installed into it. This object is also responsible for
     the daemon that will run out of this environment. All environments should be
-    sandboxed (seperate directories), and failures in one environment should not
+    sandboxed (separate directories), and failures in one environment should not
     cause failures in other environments.
 
     '''
@@ -412,7 +412,7 @@ class Environment(object):
         os.chmod(os.path.join(os.path.dirname(self.layout.runtimedir)), 0777)
         os.chmod(os.path.join(self.layout.runtimedir), 0777)
 
-        # write out a conveinence script to
+        # write out a convenience script to
         with open(os.path.join(self.layout.prefix, 'run'), 'w') as runscript:
             runscript.write('#! /usr/bin/env sh\n\n')
             runscript.write('# run PROGRAM [ARGS ...]\n')
@@ -421,6 +421,9 @@ class Environment(object):
                 runscript.write('{0}="{1}"\n'.format(k, v))
                 runscript.write('export {0}\n\n'.format(k))
             runscript.write('exec "$@"\n')
+
+        os.chmod(os.path.join(self.layout.prefix, 'run'), 0755)
+
 
     def destroy(self):
         """

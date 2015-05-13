@@ -350,6 +350,10 @@ class Environment(object):
                                 os.path.join(dst_path, bin_item),
                                 )
 
+            elif os.path.islink(src_path):
+                linkto = os.readlink(src_path)
+                os.symlink(linkto, dst_path)
+
             elif os.path.isdir(src_path):
                 shutil.copytree(src_path,
                                 dst_path,

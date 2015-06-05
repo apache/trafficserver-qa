@@ -273,8 +273,9 @@ class Environment(object):
         for env_key in ('LD_LIBRARY_PATH',  # for *nix
                         'DYLD_LIBRARY_PATH',  # for mac
                         ):
-            if environ.has_key(env_key) and self.layout.libdir not in environ[env_key].split(':'):
-                environ[env_key] = self.layout.libdir + ':' + environ[env_key]
+            if environ.has_key(env_key):
+                if self.layout.libdir not in environ[env_key].split(':'):
+                    environ[env_key] = self.layout.libdir + ':' + environ[env_key]
             else:
                 environ[env_key] = self.layout.libdir
 

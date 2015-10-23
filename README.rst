@@ -32,7 +32,7 @@ since after writing the majority of code is not ATS specific.
 
 Environment Variables
 =====================
-TSQA_LAYOUT_PREFIX: Prefix to create layouts for each test execution (defaults to /tmp)
+TSQA_LAYOUT_PREFIX: Prefix to create layouts for each test execution (defaults to tsqa.env.)
+TSQA_LAYOUT_DIR: Directory to create layouts for each test execution (defaults to /tmp)
 TSQA_LOG_LEVEL: Log level for TSQA (defaults to INFO)
 TSQA_TMP_DIR: temp directory for building of source (environment factory)
-

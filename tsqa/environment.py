@@ -47,7 +47,8 @@ class EnvironmentFactory(object):
                  source_dir,
                  env_cache_dir,
                  default_configure=None,
-                 default_env=None):
+                 default_env=None,
+                 build_dir=None):
         # if no one made the cache class, make it
         if self.class_environment_stash is None:
             self.class_environment_stash = tsqa.utils.BuildCache(env_cache_dir)
@@ -65,6 +66,8 @@ class EnvironmentFactory(object):
             self.default_env = default_env
         else:
             self.default_env = copy.copy(os.environ)
+
+        self.build_dir = build_dir
 
     def autoreconf(self):
         '''
@@ -150,7 +153,9 @@ class EnvironmentFactory(object):
                 raise EnvironmentFactory.negative_cache[key]
             try:
                 self.autoreconf()
-                builddir = tempfile.mkdtemp()
+                # if we have a build dir configured, lets use thatm otherwise
+                # lets use a tmp one
+                builddir = self.build_dir or tempfile.mkdtemp()
 
                 kwargs = {
                     'cwd': builddir,
@@ -177,7 +182,9 @@ class EnvironmentFactory(object):
                 # make install
                 tsqa.utils.run_sync_command(['make', 'install', 'DESTDIR={0}'.format(installdir)], **kwargs)
 
-                shutil.rmtree(builddir)  # delete builddir, not useful after install
+                # if we had to create a tmp dir, we should delete it
+                if self.build_dir is None:
+                    shutil.rmtree(builddir)
                 # stash the env
                 self.environment_stash[key] = {
                         'path': installdir,

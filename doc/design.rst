@@ -26,13 +26,11 @@ should be created as style/testing requirements of the project the tests are for
 This is done by effectively just creating a variety of helper classes that TestCases
 can sub-class to get some common functionality for free.
 
-
 ============
 Architecture
 ============
 Due to the flexible design principles at play there is very little in terms of
 architecture, but we'll go over the design of a few of the basic helper concepts.
-
 
 Environment
 ============
@@ -48,7 +46,6 @@ for. It will then return a copy of the requested environment to the caller. This
 means that if N tests require the same base environment we only have to compile
 once instead of N times.
 
-
 Endpoint
 ========
 Another common requirement for integration testing a proxy is an origin. Not only
@@ -56,7 +53,6 @@ do we need an origin, it is common to test the request/response on the origin as
 as the client (since the proxy will modify the request/response). To aid in these
 sorts of tests we provide a DynamicHTTPEndpoint class which will create a Flask
 server in a separate thread with APIs to register endpoints and track requests.
-
 
 test_cases
 ==========

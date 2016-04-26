@@ -27,6 +27,7 @@ import tsqa.endpoint
 import tsqa.environment
 import tsqa.configs
 import tsqa.utils
+import plugin.conf_plugin
 unittest = tsqa.utils.import_unittest()
 
 
@@ -117,7 +118,7 @@ class EnvironmentCase(unittest.TestCase):
         # call parent destructor
         super(EnvironmentCase, cls).tearDownClass()
         # if the test was successful, tear down the env
-        if cls.__successful:
+        if cls.__successful and (hasattr(plugin.conf_plugin, 'args') and ((not plugin.conf_plugin.args.keep_env) or (plugin.conf_plugin.args.keep_env is False))):
             cls.environment.destroy()  # this will tear down any processes that we started
 
     # Some helpful properties

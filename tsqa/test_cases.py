@@ -30,22 +30,16 @@ import tsqa.utils
 unittest = tsqa.utils.import_unittest()
 
 
-
-# Base environment case
-class EnvironmentCase(unittest.TestCase):
+class BaseEnvironmentCase(unittest.TestCase):
     '''
     This class will:
         - get a unique environment (using getEnv())
+        - verify that the env is valid for the test (using verifyEnv())
         - create wrappers for ATS configs available in self.configs
         - setup the environment (setUpEnv())
         - write out the configs
         - start the environment (environment.start())
     '''
-    # TODO: better naming??
-    environment_factory = {'configure': None,
-                           'env': None,
-                           }
-
     def run(self, result=None):
         unittest.TestCase.run(self, result)
         # we want to keep track of failures at a class level-- not instance level
@@ -54,13 +48,14 @@ class EnvironmentCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # call parent constructor
-        super(EnvironmentCase, cls).setUpClass()
+        super(BaseEnvironmentCase, cls).setUpClass()
 
         # get a logger
         cls.log = logging.getLogger(__name__)
 
         # get an environment
         cls.environment = cls.getEnv()
+        cls.verifyEnv()
         # TODO: better... I dont think this output is captured in each test run
         logging.info('Environment prefix is {0}'.format(cls.environment.layout.prefix))
 
@@ -89,15 +84,12 @@ class EnvironmentCase(unittest.TestCase):
         cls.__successful = True
 
     @classmethod
+    def verifyEnv(cls):
+        pass
+
+    @classmethod
     def getEnv(cls):
-        '''
-        This function is responsible for returning an environment. The default
-        is to build ATS and return a copy of an environment
-        '''
-        SOURCE_DIR = os.getenv('TSQA_SRC_DIR', '~/trafficserver')
-        TMP_DIR = os.getenv('TSQA_TMP_DIR','/tmp/tsqa')
-        ef = tsqa.environment.EnvironmentFactory(SOURCE_DIR, os.path.join(TMP_DIR, 'base_envs'))
-        return ef.get_environment(cls.environment_factory['configure'], cls.environment_factory['env'])
+        raise NotImplementedError()
 
     @classmethod
     def setUpEnv(cls, env):
@@ -115,7 +107,7 @@ class EnvironmentCase(unittest.TestCase):
         cls.environment.stop()
 
         # call parent destructor
-        super(EnvironmentCase, cls).tearDownClass()
+        super(BaseEnvironmentCase, cls).tearDownClass()
         # if the test was successful, tear down the env
         if cls.__successful:
             cls.environment.destroy()  # this will tear down any processes that we started
@@ -128,6 +120,59 @@ class EnvironmentCase(unittest.TestCase):
         '''
         # TODO: create a better dict by parsing the config-- to handle http/https ports in the string
         return {'http': 'http://127.0.0.1:{0}'.format(self.configs['records.config']['CONFIG']['proxy.config.http.server_ports'])}
+
+
+class EnvironmentFactoryCase(BaseEnvironmentCase):
+    '''TestCase that can build its own trafficserver using EnvironmentFactory
+    '''
+    # TODO: better naming??
+    environment_factory = {'configure': None,
+                           'env': None,
+                           }
+    @classmethod
+    def getEnv(cls):
+        '''
+        This function is responsible for returning an environment. The default
+        is to build ATS and return a copy of an environment
+        '''
+        SOURCE_DIR = os.getenv('TSQA_SRC_DIR', '~/trafficserver')
+        TMP_DIR = os.getenv('TSQA_TMP_DIR','/tmp/tsqa')
+        ef = tsqa.environment.EnvironmentFactory(SOURCE_DIR, os.path.join(TMP_DIR, 'base_envs'))
+        return ef.get_environment(cls.environment_factory['configure'], cls.environment_factory['env'])
+
+
+# TODO: deprecation warning? The naming for this should really be the alternate
+class EnvironmentCase(EnvironmentFactoryCase):
+    pass
+
+
+class CloneEnvironmentCase(BaseEnvironmentCase):
+    # dict of k/v that must exist in the feature list of traffic_layout
+    feature_requirements = {}
+
+    @classmethod
+    def verifyEnv(cls):
+        # verify that features requirements are met
+        env_features = cls.environment.features()
+        for k, v in cls.feature_requirements.iteritems():
+            if k not in env_features or env_features[k] != v:
+                # TODO: better error
+                raise unittest.SkipTest(e)
+
+    @classmethod
+    def getEnv(cls):
+        '''Clone an existing environment at `TSQA_ATS_ROOT`
+        '''
+        # TODO: better default? Or no default?
+        # create a layout
+        layout = tsqa.environment.Layout(
+            os.path.expanduser(os.getenv('TSQA_ATS_ROOT'))
+        )
+
+        # return an environment cloned from that layout
+        ret = tsqa.environment.Environment()
+        ret.clone(layout=layout)
+        return ret
 
 
 class DynamicHTTPEndpointCase(unittest.TestCase):
@@ -187,4 +232,3 @@ class HTTPBinCase(unittest.TestCase):
             path = '/' + path
         return 'http://127.0.0.1:{0}{1}'.format(self.http_endpoint.address[1],
                                                 path)
-

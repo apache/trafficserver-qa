@@ -51,6 +51,15 @@ class OverrideConfigureFlags(tsqa.test_cases.EnvironmentCase):
     }
 
 
+class FeatureRequirement(tsqa.test_cases.CloneEnvironmentCase):
+    '''
+    CloneEnvironmentCase will clone an environment (instead of building). You can
+    declare dependencies on various features in trafficserver based on the output
+    from traffic_layout. If the requirements aren't met your test will be skipped
+    '''
+    feature_requirements = {'TS_HAS_WCCP': 0}
+
+
 class ConfiguredCase(tsqa.test_cases.EnvironmentCase):
     '''
     This is the trivial example of a TestCase. The parent class (in this case
@@ -75,6 +84,3 @@ class ConfiguredCase(tsqa.test_cases.EnvironmentCase):
             'proxy.config.log.squid_log_enabled': 1,
             'proxy.config.log.squid_log_is_ascii': 1,
         })
-
-
-

@@ -24,6 +24,7 @@ import sys
 import time
 import multiprocessing
 import hashlib
+import json
 
 import tsqa.configs
 import tsqa.utils
@@ -272,6 +273,13 @@ class Environment(object):
     cause failures in other environments.
 
     '''
+    def features(self):
+        out = subprocess.check_output([
+            os.path.join(self.layout.bindir, 'traffic_layout'),
+            '-fj',
+        ])
+        return json.loads(out.decode("utf-8"))
+
     @property
     def shell_env(self):
         environ = copy.copy(os.environ)
@@ -349,6 +357,7 @@ class Environment(object):
             os.makedirs(self.layout.prefix)
         os.chmod(self.layout.prefix, 0777)  # Make the tmp dir readable by all
 
+        # TODO: handle sock files (copytree doesn't like them!)
         # copy all files from old layout to new one
         for item in os.listdir(layout.prefix):
             src_path = os.path.join(layout.prefix, item)
@@ -395,9 +404,14 @@ class Environment(object):
             ('127.0.0.1', admin_port),
         ]
 
+        # TODO: clear out all configs!
+        # truncate remap.config
+        open(os.path.join(self.layout.sysconfdir, 'remap.config'), 'w').truncate()
+        open(os.path.join(self.layout.sysconfdir, 'records.config'), 'w').truncate()
+
         # overwrite a few things that need to be changed to have a unique env
         records = tsqa.configs.RecordsConfig(os.path.join(self.layout.sysconfdir, 'records.config'))
-        records['CONFIG'].update({
+        records['CONFIG'] = {
             'proxy.config.config_dir': self.layout.sysconfdir,
             'proxy.config.body_factory.template_sets_dir': os.path.join(self.layout.sysconfdir, 'body_factory'),
             'proxy.config.plugin.plugin_dir': self.layout.plugindir,
@@ -425,7 +439,7 @@ class Environment(object):
             # set the process_server timeouts to 0 (faster startup)
             'proxy.config.lm.pserver_timeout_secs': 0,
             'proxy.config.lm.pserver_timeout_msecs': 0,
-        })
+        }
         records.write()
 
         os.chmod(os.path.join(os.path.dirname(self.layout.runtimedir)), 0777)

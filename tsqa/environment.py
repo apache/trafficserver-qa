@@ -293,11 +293,12 @@ class Environment(object):
         cmd = [path, '--debug', '--stdout']
 
         with open(os.path.join(self.layout.logdir, 'cop.log'), 'w+') as logfile:
-            self.cop = subprocess.Popen(cmd,
-                                        env=self.shell_env,
-                                        stdout=logfile,
-                                        stderr=logfile,
-                                        )
+            self.cop = subprocess.Popen(
+                cmd,
+                env=self.shell_env,
+                stdout=logfile,
+                stderr=logfile,
+            )
             start = time.time()
             # TODO: more specific exception?
             try:
@@ -356,20 +357,22 @@ class Environment(object):
             if item == layout.suffixes['bindir']:
                 os.makedirs(dst_path)  # make the dest dir
                 for bin_item in os.listdir(src_path):
-                     os.symlink(os.path.join(src_path, bin_item),
-                                os.path.join(dst_path, bin_item),
-                                )
+                     os.symlink(
+                        os.path.join(src_path, bin_item),
+                        os.path.join(dst_path, bin_item),
+                     )
 
             elif os.path.islink(src_path):
                 linkto = os.readlink(src_path)
                 os.symlink(linkto, dst_path)
 
             elif os.path.isdir(src_path):
-                shutil.copytree(src_path,
-                                dst_path,
-                                symlinks=True,
-                                ignore=None,
-                                )
+                shutil.copytree(
+                    src_path,
+                    dst_path,
+                    symlinks=True,
+                    ignore=None,
+                )
 
             elif os.path.isfile(src_path):
                 shutil.copyfile(src_path, dst_path)
@@ -386,10 +389,11 @@ class Environment(object):
         manager_mgmt_port = tsqa.utils.bind_unused_port()[1]
         admin_port = tsqa.utils.bind_unused_port()[1]
 
-        self.hostports = [('127.0.0.1', http_server_port),
-                          ('127.0.0.1', manager_mgmt_port),
-                          ('127.0.0.1', admin_port),
-                          ]
+        self.hostports = [
+            ('127.0.0.1', http_server_port),
+            ('127.0.0.1', manager_mgmt_port),
+            ('127.0.0.1', admin_port),
+        ]
 
         # overwrite a few things that need to be changed to have a unique env
         records = tsqa.configs.RecordsConfig(os.path.join(self.layout.sysconfdir, 'records.config'))

@@ -119,6 +119,8 @@ class DynamicHTTPEndpoint(threading.Thread):
         threading.Thread.__init__(self)
         # dict to store request data in
         self._tracked_requests = {}
+        # error in startup
+        self.error = None
 
         self.daemon = True
         self.port = port
@@ -221,11 +223,14 @@ class DynamicHTTPEndpoint(threading.Thread):
         return 'http://127.0.0.1:{0}{1}'.format(self.address[1], path)
 
     def run(self):
-        self.server = make_server('',
-                                  self.port,
-                                  self.app.wsgi_app)
-        # mark the socket as SO_REUSEADDR
-        self.server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            self.server = make_server('',
+                                      self.port,
+                                      self.app.wsgi_app)
+            # mark the socket as SO_REUSEADDR
+            self.server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        except Exception as e:
+            self.error = e
         # mark it as ready
         self.ready.set()
         # serve it

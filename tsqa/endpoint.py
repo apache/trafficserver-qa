@@ -231,6 +231,8 @@ class DynamicHTTPEndpoint(threading.Thread):
             self.server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         except Exception as e:
             self.error = e
+            self.ready.set()
+            return
         # mark it as ready
         self.ready.set()
         # serve it

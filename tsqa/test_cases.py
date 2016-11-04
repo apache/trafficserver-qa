@@ -190,7 +190,7 @@ class DynamicHTTPEndpointCase(unittest.TestCase):
 
         cls.http_endpoint.ready.wait()
         if cls.http_endpoint.error is not None:
-            raise unittest.SkipTest('Error starting DynamicHTTPEndpoint: {0}'.format(e))
+            raise unittest.SkipTest('Error starting DynamicHTTPEndpoint: {0}'.format(cls.http_endpoint.error))
 
         # Do this last, so we can get our stuff registered
         # call parent constructor

@@ -43,7 +43,7 @@ class BaseEnvironmentCase(unittest.TestCase):
     def run(self, result=None):
         unittest.TestCase.run(self, result)
         # we want to keep track of failures at a class level-- not instance level
-        self.__class__.__successful &= result.result.wasSuccessful()
+        self.__class__.__successful &= result.wasSuccessful()
 
     @classmethod
     def setUpClass(cls):
